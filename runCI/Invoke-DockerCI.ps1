@@ -6,7 +6,7 @@
 
     Summary: Invokes Windows to Windows Docker CI testing on an arbitrary
              build of Windows configured for running containers, against
-             an arbitrary git branch (docker/docker master is default)
+             an arbitrary git branch (moby/moby master is default)
 
     License: See https://github.com/jhowardmsft/docker-w2wCIScripts/blob/master/LICENSE
 
@@ -20,7 +20,7 @@
     If no parameters are supplied, the system drive will be used for
     everything; the latest binary from master.dockerproject.org will be
     used as the control daemon, and the sources will be the current master
-    available at https://github.com/docker/docker.
+    available at https://github.com/moby/moby.
 
     THIS TAKES AGES TO RUN!!!
       Expect this entire script to take (as at time of writing based on around
@@ -36,7 +36,7 @@
 
 .PARAMETER SourcesSubdir
      For example "gopath". Subdir on SourcesDrive where the sources
-     are cloned to such as c:\gopath\src\github.com\docker\docker. 
+     are cloned to such as c:\gopath\src\github.com\moby\moby. 
      If not set, defaults to 'gopath'
 
 .PARAMETER TestrunDrive
@@ -69,7 +69,7 @@
        are expected to be committed and pushed to.
 
     -  Want to test a specific commit? Just put it in. For reference
-       the TP4 docker is on docker/docker master, commit 18c9fe0,
+       the TP4 docker is on moby/moby master, commit 18c9fe0,
        build date Nov 23 2015 22:32:50 UTC. In this example, you wouldn't
        set GitRemote as it's on master.
 
@@ -151,8 +151,8 @@
 .Parameter IntegrationInContainer
    Skips the download of docker.exe and dockerd.exe
 
-.Parameter LCOWSupported
-   Enabled Linux-Containers-On-Windows (LCOW) mode
+.Parameter LCOW
+   Enables Linux-Containers-On-Windows (LCOW) mode for daemon under test
 
    
 .EXAMPLE
@@ -196,7 +196,7 @@ param(
     [Parameter(Mandatory=$false)][string]$WindowsBaseImage="",
     [Parameter(Mandatory=$false)][switch]$SkipControlDownload=$False,
     [Parameter(Mandatory=$false)][switch]$IntegrationInContainer=$False,
-    [Parameter(Mandatory=$false)][switch]$LCOWSupported=$False
+    [Parameter(Mandatory=$false)][switch]$LCOW=$False
 )
 
 $ErrorActionPreference = 'Stop'
@@ -322,7 +322,7 @@ Function Get-Sources
                 Write-Host -ForegroundColor green "INFO: Wiping $Workspace..."
                 Remove-Item -Recurse -Force $Workspace
             }
-            $proc = Start-Process git.exe -ArgumentList "clone https://github.com/docker/docker $Workspace" -NoNewWindow -PassThru 
+            $proc = Start-Process git.exe -ArgumentList "clone https://github.com/moby/moby $Workspace" -NoNewWindow -PassThru 
             try
             {
                 $proc | Wait-Process -Timeout 300 -ErrorAction Stop
@@ -531,9 +531,9 @@ Try {
     if ($IntegrationInContainer) {
         $env:INTEGRATION_IN_CONTAINER = "Yes"
     }
-    $env:LCOW_SUPPORTED=""
-    if ($LCOWSupported) {
-        $env:LCOW_SUPPORTED = "Yes"
+    $env:LCOW_MODE=""
+    if ($LCOW) {
+        $env:LCOW_MODE = "Yes"
     }
     $env:SKIP_COPY_GO=""
     if ($SkipCopyGo) {
@@ -612,7 +612,7 @@ Try {
     Write-Host " - Skip download:     $SkipControlDownload"
     Write-Host " - Skip copy go:      $SkipCopyGo"
     Write-Host " - Test in container: $IntegrationInContainer"
-    Write-Host " - LCOW Supported:    $LCOWSupported"
+    Write-Host " - LCOW Mode:         $LCOWMode"
     if ($SkipIntegrationTests -eq $false) {
         if (-not ([string]::IsNullOrWhiteSpace($IntegrationTestName))) {
             Write-Host " - CLI test match:    $IntegrationTestName"
@@ -626,7 +626,7 @@ Try {
 
     # Where we clone the docker sources
     $WorkspaceRoot="$($SourcesDrive):\$($SourcesSubdir)"
-    $Workspace="$WorkspaceRoot\src\github.com\docker\docker"
+    $Workspace="$WorkspaceRoot\src\github.com\moby\moby"
 
     if (-not(Test-Path "C:\CIUtilities")) { mkdir "C:\CIUtilities" | Out-Null }
 
@@ -754,14 +754,14 @@ Try {
     # END TODO
 
     # Update GOPATH now everything is installed
-    $env:GOPATH="$WorkspaceRoot\src\github.com\docker\docker\vendor;$WorkspaceRoot"
+    $env:GOPATH="$WorkspaceRoot\src\github.com\moby\moby\vendor;$WorkspaceRoot"
    
 
     # Always by default use the named pipe. We override this for loading images as TCP is faster there.
     $env:DOCKER_HOST="npipe:////./pipe/docker_engine"
 
     # Start the control daemon
-    $daemon="$env:Temp\dockerdcontrol.exe --graph $ControlRoot --pidfile=$ControlRoot\daemon\docker.pid -H=$env:DOCKER_HOST -H=tcp://0.0.0.0:2375"
+    $daemon="$env:Temp\dockerdcontrol.exe --data-root $ControlRoot --pidfile=$ControlRoot\daemon\docker.pid -H=$env:DOCKER_HOST -H=tcp://0.0.0.0:2375"
     if ($HyperVControl -eq $True) {
         $daemon=$daemon+" --exec-opt isolation=hyperv"
     }
