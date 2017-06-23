@@ -612,7 +612,7 @@ Try {
     Write-Host " - Skip download:     $SkipControlDownload"
     Write-Host " - Skip copy go:      $SkipCopyGo"
     Write-Host " - Test in container: $IntegrationInContainer"
-    Write-Host " - LCOW Mode:         $LCOWMode"
+    Write-Host " - LCOW Mode:         $LCOW"
     if ($SkipIntegrationTests -eq $false) {
         if (-not ([string]::IsNullOrWhiteSpace($IntegrationTestName))) {
             Write-Host " - CLI test match:    $IntegrationTestName"
