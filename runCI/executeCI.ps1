@@ -846,14 +846,19 @@ Try {
             # Force to use the test binaries, not the host ones.
             $env:PATH="$env:TEMP\binary;$env:PATH;"  
 
-
-            # OK, so where's this going to come from???
-            #$c="docker pull busybox"
-            #$c | Out-File -Force "$env:TEMP\binary\runLCOWCLI.ps1"
+            $wc = New-Object net.webclient
+            try {
+                Write-Host -ForegroundColor green "INFO: Downloading latest execution script..."
+                $wc.Downloadfile("https://raw.githubusercontent.com/jhowardmsft/docker-w2wCIScripts/master/runCI/lcowbasicvalidation.ps1", "$env:TEMP\binary\lcowbasicvalidation.ps1")
+            } 
+            catch [System.Net.WebException]
+            {
+                Throw ("Failed to download: $_")
+            }
 
             $start=(Get-Date); 
             Try { 
-                & "e:\docker\ci\w2w\runci\lcowbasicvalidation.ps1" 
+                & "$env:TEMP\binary\lcowbasicvalidation.ps1" 
             } Catch [Exception] { 
                 Throw "ERROR: LCOW tests failed at $(Get-Date) with error $_" 
             }

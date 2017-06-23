@@ -67,6 +67,8 @@ Try {
     Try-Command 'docker images --format "{{.Repository}}:{{.ID}}"' $true "busybox:"
     Try-Command 'docker images' $false ""
 
+    # Ping
+    Try-Command "docker run --rm busybox ping -c 3 www.microsoft.com" $true "64 bytes from"
 
     # Run a container, commit it, make sure it shows up in the list of images, and that when we run it, the change was present.
     Try-Command "docker run --name commitme busybox mkdir /john" $true ""
