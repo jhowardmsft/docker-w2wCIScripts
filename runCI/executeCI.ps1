@@ -859,6 +859,7 @@ Try {
             $start=(Get-Date); 
             Try { 
                 & "$env:TEMP\binary\lcowbasicvalidation.ps1" 
+                #& "e:\docker\ci\w2w\runci\lcowbasicvalidation.ps1" 
             } Catch [Exception] { 
                 Throw "ERROR: LCOW tests failed at $(Get-Date) with error $_" 
             }

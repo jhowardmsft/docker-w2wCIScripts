@@ -3,7 +3,7 @@
 # By John Howard (@jhowardmsft) June 2017.
 #
 # These are very basic tests, NOT the integration CLI
-#
+# It's not very elegantly written either, but gets the job done.
 
 $ErrorActionPreference = 'Stop'
 $StartTime=Get-Date
@@ -31,6 +31,19 @@ Function Try-Command([string]$command, [bool]$hardFail, [string]$mustContain) {
     return $output
 }
 
+Function Setup-Build([string]$dfContent) {
+    $temp = [System.Guid]::NewGuid()
+    $dir = "$env:TEMP\$temp"
+    New-Item -type directory -Path $dir | Out-Null
+    cd $dir
+    [System.IO.File]::WriteAllLines("$dir\dockerfile", $dfContent)
+ }
+
+
+Function Do-Pull([string]$imageName) {
+    Try-Command "docker pull $imageName" $true ""
+    Try-Command 'docker images --format "{{.Repository}}:{{.ID}}"' $true "$imageName`:"
+}
 
 Try {
     $global:count=0
@@ -49,26 +62,37 @@ Try {
     Try-Command "docker images" $true "REPOSITORY" # From the heading
 
     # Delete all containers
-    $psaq = Try-Command 'docker ps -aq' $false ""
+    $psaq = Try-Command 'docker ps -aq' $false
     $psaq = $psaq -replace("`r`n"," ")
     if ($psaq.Length -gt 0) {
-       Try-Command "docker rm -f $psaq" $true ""
+       Try-Command "docker rm -f $psaq" $true
     }
 
     # Delete all images
-    $imgs = Try-Command 'docker images --format "{{.ID}}"' $false ""
+    $imgs = Try-Command 'docker images --format "{{.ID}}"' $false
     $imgs = $imgs -replace("`r`n"," ")
     if ($imgs.Length -gt 0) {
-       Try-Command "docker rmi -f $imgs" $true ""
+       Try-Command "docker rmi -f $imgs" $true
     }
 
     # Pull and verify it's listed
-    Try-Command "docker pull busybox" $true ""
-    Try-Command 'docker images --format "{{.Repository}}:{{.ID}}"' $true "busybox:"
-    Try-Command 'docker images' $false ""
+    Do-Pull "busybox"
+    Try-Command 'docker images' $true
 
     # Ping
     Try-Command "docker run --rm busybox ping -c 3 www.microsoft.com" $true "64 bytes from"
+
+
+    # Build
+    Setup-Build '
+     # platform=linux
+     FROM busybox
+     ENV "Goldens" "Are the best dogs"
+     RUN export
+    '
+    Try-Command 'docker build .'  $true "export Goldens='Are the best dogs'"
+    Remove-Item ".\dockerfile" #-force -ErrorAction SilentlyContinue
+
 
     # Run a container, commit it, make sure it shows up in the list of images, and that when we run it, the change was present.
     Try-Command "docker run --name commitme busybox mkdir /john" $true ""
@@ -77,6 +101,22 @@ Try {
     Try-Command 'docker images --format "{{.Repository}}:{{.ID}}"' $true "committed:$sha"
     Try-Command "docker run committed ls -l /" $true "john"
 
+    # Pull the remainder of the top 15 images
+    Do-Pull "nginx"
+    Do-Pull "redis" 
+    Do-Pull "ubuntu" 
+    Do-Pull "registry"
+    Do-Pull "alpine"
+    Do-Pull "mongo" 
+    Do-Pull "mysql"
+    Do-Pull "swarm"
+    Do-Pull "hello-world"
+    Do-Pull "elasticsearch"
+    Do-Pull "postgres"
+    Do-Pull "node"
+    Do-Pull "httpd"
+    Do-Pull "logstash"
+    Try-Command 'docker images' $true
 
     #---------------------------------------------------------------------------------#
 
@@ -97,5 +137,5 @@ Finally {
 	$global:ProgressPreference=$origProgressPreference
     $Dur=New-TimeSpan -Start $StartTime -End $(Get-Date)
     Write-Host -ForegroundColor $FinallyColour "INFO: lcowtests.ps1 exiting at $(date). Duration $dur"
+    
 }
-
