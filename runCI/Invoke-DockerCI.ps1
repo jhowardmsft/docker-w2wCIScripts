@@ -36,7 +36,7 @@
 
 .PARAMETER SourcesSubdir
      For example "gopath". Subdir on SourcesDrive where the sources
-     are cloned to such as c:\gopath\src\github.com\moby\moby. 
+     are cloned to such as c:\gopath\src\github.com\docker\docker. 
      If not set, defaults to 'gopath'
 
 .PARAMETER TestrunDrive
@@ -622,7 +622,7 @@ Try {
 
     # Where we clone the docker sources
     $WorkspaceRoot="$($SourcesDrive):\$($SourcesSubdir)"
-    $Workspace="$WorkspaceRoot\src\github.com\moby\moby"
+    $Workspace="$WorkspaceRoot\src\github.com\docker\docker"
 
     if (-not(Test-Path "C:\CIUtilities")) { mkdir "C:\CIUtilities" | Out-Null }
 
@@ -748,7 +748,7 @@ Try {
     $r=Download-File "$CIScriptLocation" "" "$ControlRoot\CIScript.ps1"
 
     # Update GOPATH now everything is installed
-    $env:GOPATH="$WorkspaceRoot\src\github.com\moby\moby\vendor;$WorkspaceRoot"
+    $env:GOPATH="$WorkspaceRoot\src\github.com\docker\docker\vendor;$WorkspaceRoot"
    
 
     # Always by default use the named pipe. We override this for loading images as TCP is faster there.

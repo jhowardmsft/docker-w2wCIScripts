@@ -10,6 +10,11 @@ $ErrorActionPreference = 'Stop'
 $StartTime=Get-Date
 #$env:DOCKER_DUT_DEBUG="yes" # Comment out to not be in debug mode
 
+# Put here to be blindingly obvious. The production jenkins.dockerproject.org Linux-container 
+# CI job is "Docker-PRs-LoW-RS3". Force into LCOW mode for this run.
+if ($env:BUILD_TAG -match "-LoW") { $env:LCOW_MODE=1 }
+
+
 # -------------------------------------------------------------------------------------------
 # When executed, we rely on four variables being set in the environment:
 #
@@ -27,8 +32,8 @@ $StartTime=Get-Date
 #
 #                        Based on the above examples, it would be expected that Jenkins
 #                        would clone the sources being tested to
-#                        SOURCES_DRIVE\SOURCES_SUBDIR\src\github.com\moby\moby, or
-#                        c:\gopath\src\github.com\moby\moby
+#                        SOURCES_DRIVE\SOURCES_SUBDIR\src\github.com\docker\docker, or
+#                        c:\gopath\src\github.com\docker\docker
 #
 #    TESTRUN_DRIVE       is the drive where we build the binary on and redirect everything
 #                        to for the daemon under test. On an Azure D2 type host which has
@@ -277,12 +282,12 @@ Try {
     Write-Host  -ForegroundColor Green "INFO: Test run under $env:TESTRUN_DRIVE`:\$env:TESTRUN_SUBDIR\..."
 
     # Check the intended source location is a directory
-    if (-not (Test-Path -PathType Container "$env:SOURCES_DRIVE`:\$env:SOURCES_SUBDIR\src\github.com\moby\moby" -ErrorAction SilentlyContinue)) {
-        Throw "ERROR: $env:SOURCES_DRIVE`:\$env:SOURCES_SUBDIR\src\github.com\moby\moby is not a directory!"
+    if (-not (Test-Path -PathType Container "$env:SOURCES_DRIVE`:\$env:SOURCES_SUBDIR\src\github.com\docker-docker" -ErrorAction SilentlyContinue)) {
+        Throw "ERROR: $env:SOURCES_DRIVE`:\$env:SOURCES_SUBDIR\src\github.com\docker\docker is not a directory!"
     }
 
     # Make sure we start at the root of the sources
-    cd "$env:SOURCES_DRIVE`:\$env:SOURCES_SUBDIR\src\github.com\moby\moby"
+    cd "$env:SOURCES_DRIVE`:\$env:SOURCES_SUBDIR\src\github.com\docker\docker"
     Write-Host  -ForegroundColor Green "INFO: Running in $(pwd)"
 
     # Make sure we are in repo
@@ -401,7 +406,7 @@ Try {
 
     # Nuke everything and go back to our sources after
     Nuke-Everything
-    cd "$env:SOURCES_DRIVE`:\$env:SOURCES_SUBDIR\src\github.com\moby\moby"
+    cd "$env:SOURCES_DRIVE`:\$env:SOURCES_SUBDIR\src\github.com\docker\docker"
 
     # Redirect to a temporary location. 
     $TEMPORIG=$env:TEMP
@@ -500,9 +505,9 @@ Try {
 
     Write-Host -ForegroundColor Green "INFO: Copying dockerversion from the container..."
     $ErrorActionPreference = "SilentlyContinue"
-    docker cp "$contPath\..\dockerversion\version_autogen.go" "$env:SOURCES_DRIVE`:\$env:SOURCES_SUBDIR\src\github.com\moby\moby\dockerversion"
+    docker cp "$contPath\..\dockerversion\version_autogen.go" "$env:SOURCES_DRIVE`:\$env:SOURCES_SUBDIR\src\github.com\docker\docker\dockerversion"
     if (-not($LastExitCode -eq 0)) {
-         Throw "ERROR: Failed to docker cp the generated version_autogen.go to $env:SOURCES_DRIVE`:\$env:SOURCES_SUBDIR\src\github.com\moby\moby\dockerversion"
+         Throw "ERROR: Failed to docker cp the generated version_autogen.go to $env:SOURCES_DRIVE`:\$env:SOURCES_SUBDIR\src\github.com\docker\docker\dockerversion"
     }
     $ErrorActionPreference = "Stop"
 
@@ -807,13 +812,13 @@ Try {
                 $Duration= $(Measure-Command { & docker run `
                                                         --rm `
                                                         -e c=$c `
-                                                        --workdir "c`:\go\src\github.com\moby\moby\integration-cli" `
+                                                        --workdir "c`:\go\src\github.com\docker\docker\integration-cli" `
                                                         -v "$env:TEMP\binary`:c:\target" `
                                                         docker `
                                                         "`$env`:PATH`='c`:\target;'+`$env:PATH`;  `$env:DOCKER_HOST`='tcp`://'+(ipconfig | select -last 1).Substring(39)+'`:2357'; c:\target\runIntegrationCLI.ps1" | Out-Host } )
             } else  {
                 Write-Host -ForegroundColor Green "INFO: Integration tests being run from the host:"
-                cd "$env:SOURCES_DRIVE`:\$env:SOURCES_SUBDIR\src\github.com\moby\moby\integration-cli"
+                cd "$env:SOURCES_DRIVE`:\$env:SOURCES_SUBDIR\src\github.com\docker\docker\integration-cli"
                 $env:DOCKER_HOST=$DASHH_CUT  
                 $env:PATH="$env:TEMP\binary;$env:PATH;"  # Force to use the test binaries, not the host ones.
                 Write-Host -ForegroundColor Green "INFO: $c"
