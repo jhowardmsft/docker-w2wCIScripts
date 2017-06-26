@@ -136,6 +136,6 @@ Finally {
     $ErrorActionPreference="SilentlyContinue"
 	$global:ProgressPreference=$origProgressPreference
     $Dur=New-TimeSpan -Start $StartTime -End $(Get-Date)
-    Write-Host -ForegroundColor $FinallyColour "INFO: lcowtests.ps1 exiting at $(date). Duration $dur"
+    Write-Host -ForegroundColor $FinallyColour "INFO: lcowbasicvalidation.ps1 exiting at $(date). Duration $dur"
     
 }

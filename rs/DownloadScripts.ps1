@@ -92,10 +92,8 @@ try {
 
 
     # OS Version specific files (alphabetical order)
-    Copy-File -SourcePath "https://raw.githubusercontent.com/jhowardmsft/docker-w2wCIScripts/master/rs/ConfigureControlDaemon.ps1" -DestinationPath "c:\packer\ConfigureControlDaemon.ps1"
     Copy-File -SourcePath "https://raw.githubusercontent.com/jhowardmsft/docker-w2wCIScripts/master/rs/DownloadScripts.ps1" -DestinationPath "c:\packer\DownloadScripts.ps1"
     #Copy-File -SourcePath "https://raw.githubusercontent.com/jhowardmsft/docker-w2wCIScripts/master/rs/InstallPrivates.ps1" -DestinationPath "c:\packer\InstallPrivates.ps1"
-    Copy-File -SourcePath "https://raw.githubusercontent.com/jhowardmsft/docker-w2wCIScripts/master/rs/nssmdocker.cmd" -DestinationPath "c:\packer\nssmdocker.cmd"
 }
 Catch [Exception] {
     echo "$(date) DownloadScripts.ps1 Error '$_'" >> $env:SystemDrive\packer\configure.log
