@@ -282,7 +282,7 @@ Try {
     Write-Host  -ForegroundColor Green "INFO: Test run under $env:TESTRUN_DRIVE`:\$env:TESTRUN_SUBDIR\..."
 
     # Check the intended source location is a directory
-    if (-not (Test-Path -PathType Container "$env:SOURCES_DRIVE`:\$env:SOURCES_SUBDIR\src\github.com\docker-docker" -ErrorAction SilentlyContinue)) {
+    if (-not (Test-Path -PathType Container "$env:SOURCES_DRIVE`:\$env:SOURCES_SUBDIR\src\github.com\docker\docker" -ErrorAction SilentlyContinue)) {
         Throw "ERROR: $env:SOURCES_DRIVE`:\$env:SOURCES_SUBDIR\src\github.com\docker\docker is not a directory!"
     }
 
