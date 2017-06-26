@@ -375,8 +375,8 @@ Try {
         Write-Host 
         Write-Host  -ForegroundColor Green "---------------------------------------------------------------------------"
         Write-Host  -ForegroundColor Green " Failed to get a response from the control daemon. It may be down."
-        Write-Host  -ForegroundColor Green " Try re-running this CI job, or ask on #docker-dev or #docker-maintainers"
-        Write-Host  -ForegroundColor Green " to see if the the daemon is running. Also check the nssm configuration."
+        Write-Host  -ForegroundColor Green " Try re-running this CI job, or ask on #docker-maintainers on docker slack"
+        Write-Host  -ForegroundColor Green " to see if the the daemon is running. Also check the service configuration."
         Write-Host  -ForegroundColor Green " DOCKER_HOST is set to $DOCKER_HOST."
         Write-Host  -ForegroundColor Green "---------------------------------------------------------------------------"
         Write-Host 

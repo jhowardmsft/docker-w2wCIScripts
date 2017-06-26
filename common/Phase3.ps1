@@ -13,7 +13,13 @@ try {
     #--------------------------------------------------------------------------------------------
     # Configure the control daemon
     echo "$(date) Phase3.ps1 Configuring control daemon..." >> $env:SystemDrive\packer\configure.log
-    . $("$env:SystemDrive\packer\ConfigureControlDaemon.ps1")
+
+    if ($env:LOCAL_CI_INSTALL -ne 1) {
+        dockerd --data-root "$($env:TESTRUN_DRIVE):\control" --register-service
+        net start docker
+        sleep 5
+        docker version >> $env:SystemDrive\packer\configure.log
+    }
 
     #--------------------------------------------------------------------------------------------
     # Initiate Phase4. This runs as the Jenkins user interactively. This is particularly on account
