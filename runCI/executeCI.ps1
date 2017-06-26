@@ -189,7 +189,7 @@ Function Nuke-Everything {
             }
         }
 
-        # RS1 Production Server workaround - Psched
+        # TODO: This should be able to be removed in August 2017 update. Only needed for RS1  Production Server workaround - Psched
         $reg = "HKLM:\System\CurrentControlSet\Services\Psched\Parameters\NdisAdapters"
         $count=(Get-ChildItem $reg | Measure-Object).Count
         if ($count -gt 0) {
@@ -202,7 +202,7 @@ Function Nuke-Everything {
             }
         }
 
-        # RS1 Production Server workaround - WFPLWFS
+        # TODO: This should be able to be removed in August 2017 update. Only needed for RS1
         $reg = "HKLM:\System\CurrentControlSet\Services\WFPLWFS\Parameters\NdisAdapters"
         $count=(Get-ChildItem $reg | Measure-Object).Count
         if ($count -gt 0) {

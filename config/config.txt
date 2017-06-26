@@ -2,29 +2,20 @@
 # Syntax of each line is <regex>,<configset>
 # Gets more specific as it goes down. Include a default at the end (.*)
 
-# Production jenkins-tp5-1 through jenkins-tp5-9
-# jenkins-tp5-[1-9]$,tp5prod
-
-# Staging jenkins-tp5-91 through jenkins-tp5-99
-# jenkins-tp5-[9][1-9]$,tp56d
-
-# Any other jenkins-tp5-n machine, assume production
-# jenkins-tp5-\d+$,tp5prod
-
 # RS1
-jenkins-rs1-\d+$,rs1
+jenkins-rs1-\d+$,rs
 
-# RS2 (No production CI for RS2 as not released publically)
-jenkins-rs2-\d+$,rs1
+# RS2 (No production CI for RS2 as server not released publically)
+jenkins-rs2-\d+$,rs
 
-# RS3 (No changes so far from the RS1 config set)
-jenkins-rs3-\d+$,rs1
+# RS3
+jenkins-rs3-\d+$,rs
 
 # eg rs1-MMMMM-NN or rs1-MMMMM-N
-rs1-\d+-\d{1,2}$,rs1
+#rs1-\d+-\d{1,2}$,rs
 
 # eg rs2-MMMMM-NN
-rs2-\d+-\d{1,2}$,rs2
+#rs2-\d+-\d{1,2}$,rs
 
-# default to rs1
-.*,rs1
+# default to rs
+.*,rs

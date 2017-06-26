@@ -37,7 +37,10 @@
    The debug port (only used with -CreateVM)
 
 .Parameter ConfigSet
-   The configuration set such as "rs1" (only used with -CreateVM)
+   The configuration set such as "rs" (only used with -CreateVM)
+
+.Parameter RedstoneRelease
+   1,2,3,...
 
 .Parameter Switch
    Name of the virtual switch (only used with -CreateVM)
@@ -51,10 +54,8 @@
 .Parameter IgnoreMissingImages
    Don't error out if images are missing
    
-.EXAMPLE
-    #TODO
-
 #>
+
 
 param(
     [Parameter(Mandatory=$false)][string]$Path,
@@ -66,6 +67,7 @@ param(
     [Parameter(Mandatory=$false)][string]$Switch,
     [Parameter(Mandatory=$false)][int]   $DebugPort,
     [Parameter(Mandatory=$false)][string]$ConfigSet,
+    [Parameter(Mandatory=$false)][int]$RedstoneRelease,
     [Parameter(Mandatory=$false)][int]   $AzureImageVersion,
     [Parameter(Mandatory=$false)][string]$AzurePassword,
 	[Parameter(Mandatory=$false)][string]$IgnoreMissingImages
@@ -87,7 +89,8 @@ $targetSize = 127GB
 #$CreateVM=$True
 #$Switch="Wired"
 #$DebugPort=50011
-#$ConfigSet="rs1"
+#$ConfigSet="rs"
+#$RedstoneRelease=1
 #$AzureImageVersion=31
 
 Function Test-IsAdmin () {
@@ -274,9 +277,11 @@ Try {
     Copy-Item ..\common\Bootstrap.ps1 "$driveletter`:\packer\"
 
     # Files for test-signing and copying privates
-    Copy-Item ("\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\bin\certutil.exe") "$driveLetter`:\privates\"
-    Copy-Item ("\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\bin\testroot-sha2.cer") "$driveLetter`:\privates\"
-    Copy-Item ("\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\bin\idw\sfpcopy.exe") "$driveLetter`:\privates\"
+	# certutil is inbox! Don't use the bin directory as this gets generated much later in the build.
+    #Copy-Item ("\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\bin\certutil.exe") "$driveLetter`:\privates\"
+	Copy-Item "\\sesdfs\1windows\TestContent\CORE\Base\HYP\HAT\setup\testroot-sha2.cer" "$driveLetter`:\privates\"
+    #Copy-Item ("\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\bin\testroot-sha2.cer") "$driveLetter`:\privates\"
+    Copy-Item ("\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\test_automation_bins\idw\sfpcopy.exe") "$driveLetter`:\privates\"
 
     # We need NuGet
     Write-Host "INFO: Installing NuGet package provider..."
@@ -331,6 +336,7 @@ Try {
     [System.IO.File]::WriteAllText("$driveLetter`:\packer\prebootstrap.ps1", $prebootstrap, (New-Object System.Text.UTF8Encoding($False)))
 
     # Write the config set out to disk
+    [System.IO.File]::WriteAllText("$driveLetter`:\packer\release.txt", "$($ConfigSet)$($RedstoneRelease)", (New-Object System.Text.UTF8Encoding($False)))
     [System.IO.File]::WriteAllText("$driveLetter`:\packer\configset.txt", $ConfigSet, (New-Object System.Text.UTF8Encoding($False)))
 
     # Write the debug port out to disk
@@ -369,10 +375,11 @@ Try {
         Write-host -NoNewline "."
         Start-Sleep -seconds 6
     }
+    Write-Host -NoNewLine "`n"
 
     # Are we creating the Azure image for this as well?
     if ($AzureImageVersion -ne 0) {
-        $AzureTargetVHD=Join-Path $targetSubDir -ChildPath (("Azure$ConfigSet")+("v$AzureImageVersion.vhd"))
+        $AzureTargetVHD=Join-Path $targetSubDir -ChildPath (("Azure$($ConfigSet)$($RedstoneRelease)")+("v$AzureImageVersion.vhd"))
         Write-Host "INFO: Copying Azure VHD to $AzureTargetVHD"
         Copy-Item (Join-Path $targetSubdir -ChildPath $vhdFilename) $AzureTargetVHD -force
 
@@ -389,6 +396,7 @@ Try {
         Write-Host "INFO: Removing bits from the Azure VHD"
         Remove-Item "$driveLetter`:\unattend.xml" -ErrorAction SilentlyContinue
         Remove-Item "$driveLetter`:\packer\debugport.txt" -ErrorAction SilentlyContinue
+        Remove-Item "$driveLetter`:\packer\release.txt" -ErrorAction SilentlyContinue
         Remove-Item "$driveLetter`:\packer\configset.txt" -ErrorAction SilentlyContinue
         Remove-Item "$driveLetter`:\packer\password.txt" -ErrorAction SilentlyContinue
 

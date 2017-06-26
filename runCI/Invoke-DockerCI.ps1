@@ -154,10 +154,6 @@
 .Parameter LCOW
    Enables Linux-Containers-On-Windows (LCOW) mode for daemon under test
 
-   
-.EXAMPLE
-    Example To Be Completed #TODO
-
 #>
 
 # Note: The first four parameters are the ones which drive the bash script
@@ -746,12 +742,10 @@ Try {
     New-Item "$ControlRoot\daemon" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
     New-Item "$ControlRoot\graph" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
  
-    # TODO: This will eventually be in the docker sources. Step can be removed when that's done.
     # Download the CI script
     Write-Host -ForegroundColor green "INFO: CI script $CIScriptLocation"
     if (Test-Path "$ControlRoot\CIScript.ps1") { Remove-Item "$ControlRoot\CIScript.ps1" }
     $r=Download-File "$CIScriptLocation" "" "$ControlRoot\CIScript.ps1"
-    # END TODO
 
     # Update GOPATH now everything is installed
     $env:GOPATH="$WorkspaceRoot\src\github.com\moby\moby\vendor;$WorkspaceRoot"

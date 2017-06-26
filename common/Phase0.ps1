@@ -79,7 +79,7 @@ try {
     }
 
     if ([string]::IsNullOrWhiteSpace($ConfigSet)) {
-         Throw "ConfigSet must be supplied (eg rs1)"
+         Throw "ConfigSet must be supplied (eg rs)"
     }
     echo "$(date) Phase0.ps1 ConfigSet is $ConfigSet" >> $env:SystemDrive\packer\configure.log
 
