@@ -4,7 +4,8 @@ param(
     [Parameter(Mandatory=$false)][switch]$Force=$False,
     [Parameter(Mandatory=$false)][string]$size="Standard_D3_v2_Promo", # Size of the VM
     [Parameter(Mandatory=$false)][string]$ImageVersion, # Image version
-    [Parameter(Mandatory=$false)][string]$ConfigSet, # eg rs1
+    [Parameter(Mandatory=$false)][string]$ConfigSet, # eg rs
+    [Parameter(Mandatory=$false)][string]$RedstoneRelease, # eg 1,2,3 the "n" in RSn
     [Parameter(Mandatory=$false)][string]$Password
 )
 
@@ -23,7 +24,11 @@ if ([string]::IsNullOrWhiteSpace($ImageVersion)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($ConfigSet)) {
-     Throw "ConfigSet must be supplied. It's the rs1 bit in AzureRS1vnnnnn.vhd for example"
+     Throw "ConfigSet must be supplied. It's the rs bit in AzureRS1vnnnnn.vhd for example"
+}
+
+if ([string]::IsNullOrWhiteSpace($RedstoneRelease)) {
+     Throw "RedstoneRelease must be supplied. It's the X bit in AzureRSXvnnnnn.vhd for example"
 }
 
 $ErrorActionPreference = 'Stop'
@@ -42,7 +47,7 @@ function ask {
 try {
     if ([string]::IsNullOrWhiteSpace($vmName)) { Throw("vmName parameter must be supplied") }
 
-    Write-Host "INFO: Checking if VM exists"
+    Write-Host "INFO: Checking if VM $vmName exists"
     $vm = Get-AzureVM -ServiceName $vmName -Name $vmName -ErrorAction SilentlyContinue
     if ($vm -ne $null) {
         ask("WARN: VM $vmName already exists. Delete it?")
@@ -61,11 +66,12 @@ try {
         Write-Host "INFO: Service exists."
     }
 
-	
+
     # Useful $sourceImages = Get-AzureVMImage | Where-Object { $_.ImageName -like "$imagePrefix*" } | Sort-Object -Descending CreatedTime
-	
+
+
     Write-Host "INFO: Creating the configuration object..."
-    $ImageName="azure"+$ConfigSet+"v"+$ImageVersion
+    $ImageName="azure$($ConfigSet)$($RedstoneRelease)v$($ImageVersion)"
     Write-Host "INFO: Based on image $ImageName"
     $vmc = New-AzureVMConfig -ImageName $ImageName -InstanceSize $size -Name $vmName -DiskLabel $vmName |
             Add-AzureEndpoint -Name 'SSH' -LocalPort 22 -PublicPort 22 -Protocol tcp |
