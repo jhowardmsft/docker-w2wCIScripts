@@ -861,14 +861,19 @@ Try {
                 Throw ("Failed to download: $_")
             }
 
-            $start=(Get-Date); 
-            Try { 
-                & "$env:TEMP\binary\lcowbasicvalidation.ps1" 
-                #& "e:\docker\ci\w2w\runci\lcowbasicvalidation.ps1" 
-            } Catch [Exception] { 
-                Throw "ERROR: LCOW tests failed at $(Get-Date) with error $_" 
-            }
+			#Working on this. Under Jenkins, it didn't detect a failure. So trying invoke-exporession as per the WCOW way
+            #$start=(Get-Date); 
+            #Try { 
+            #    & "$env:TEMP\binary\lcowbasicvalidation.ps1" 
+            #    #& "e:\docker\ci\w2w\runci\lcowbasicvalidation.ps1" 
+            #} Catch [Exception] { 
+            #    Throw "ERROR: LCOW tests failed at $(Get-Date) with error $_" 
+            #}
 
+			# Explicit to not use measure-command otherwise don't get output as it goes
+            $start=(Get-Date); Invoke-Expression "powershell $env:TEMP\binary\lcowbasicvalidation.ps1"; echo "Last exit code $lastExitCode, _ is $_"; $Duration=New-Timespan -Start $start -End (Get-Date)
+
+			
 
             $ErrorActionPreference = "Stop"
             $Duration=New-Timespan -Start $start -End (Get-Date)

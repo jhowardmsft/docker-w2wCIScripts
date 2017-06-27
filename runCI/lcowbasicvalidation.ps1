@@ -131,11 +131,11 @@ Try {
         exit 1
     }
     Throw $_
+    exit 1
 }
 Finally {
     $ErrorActionPreference="SilentlyContinue"
-	$global:ProgressPreference=$origProgressPreference
+    $global:ProgressPreference=$origProgressPreference
     $Dur=New-TimeSpan -Start $StartTime -End $(Get-Date)
     Write-Host -ForegroundColor $FinallyColour "INFO: lcowbasicvalidation.ps1 exiting at $(date). Duration $dur"
-    
 }
