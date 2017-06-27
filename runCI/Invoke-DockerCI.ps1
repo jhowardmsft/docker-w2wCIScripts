@@ -154,6 +154,8 @@
 .Parameter LCOW
    Enables Linux-Containers-On-Windows (LCOW) mode for daemon under test
 
+.Parameter CaptureHCSTraces
+   Enables capturing of HCS tracing through the run
 #>
 
 # Note: The first four parameters are the ones which drive the bash script
@@ -192,7 +194,8 @@ param(
     [Parameter(Mandatory=$false)][string]$WindowsBaseImage="",
     [Parameter(Mandatory=$false)][switch]$SkipControlDownload=$False,
     [Parameter(Mandatory=$false)][switch]$IntegrationInContainer=$False,
-    [Parameter(Mandatory=$false)][switch]$LCOW=$False
+    [Parameter(Mandatory=$false)][switch]$LCOW=$False,
+    [Parameter(Mandatory=$false)][switch]$CaptureHCSTraces=$False
 )
 
 $ErrorActionPreference = 'Stop'
@@ -201,6 +204,7 @@ $DOCKER_DEFAULT_BASEPATH="https://master.dockerproject.org/windows/x86_64"
 $GIT_DEFAULT_LOCATION="https://github.com/git-for-windows/git/releases/download/v2.10.1.windows.1/Git-2.10.1-64-bit.exe"
 $ConfigJSONBackedUp=$False
 $CISCRIPT_DEFAULT_LOCATION = "https://raw.githubusercontent.com/jhowardmsft/docker-w2wCIScripts/master/runCI/executeCI.ps1"
+$HCS_TRACE_PROFILE = "https://gist.githubusercontent.com/jhowardmsft/71b37956df0b4248087c3849b97d8a71/raw/72e14a6d2e86d3ccdefea5766d09d6a9fc053f25/HcsTraceProfile.wprp"
 $pushed=$False  # To restore the directory if we have temporarily pushed to one.
 
 # Download-File is a simple wrapper to get a file from somewhere (HTTP, SMB or local file path)
@@ -609,6 +613,7 @@ Try {
     Write-Host " - Skip copy go:      $SkipCopyGo"
     Write-Host " - Test in container: $IntegrationInContainer"
     Write-Host " - LCOW Mode:         $LCOW"
+    Write-Host " - HCS Tracing:       $CaptureHCSTraces"
     if ($SkipIntegrationTests -eq $false) {
         if (-not ([string]::IsNullOrWhiteSpace($IntegrationTestName))) {
             Write-Host " - CLI test match:    $IntegrationTestName"
@@ -726,6 +731,15 @@ Try {
         Unblock-File "c:\CIUtilities\docker-signal.exe" -ErrorAction Stop
     }
 
+    if (-not (Test-Path "c:\CIUtilities\HcsTraceProfile.wprp")) {
+        $r=Download-File $HCS_TRACE_PROFILE "" "c:\CIUtilities\HcsTraceProfile.wprp"
+    }
+
+    if ($CaptureHCSTraces) {
+        Write-Host -ForegroundColor green "INFO: Starting HCS Argon tracing"
+        Wpr.exe -start "c:\CIUtilities\HcsTraceProfile.wprp!HcsArgon" -filemode
+    }
+	
     # Zap the control daemons path if asked to destroy the cache
     if ( Test-Path $ControlRoot -ErrorAction SilentlyContinue ) {
         if ($DestroyCache -eq $true) {
@@ -825,6 +839,16 @@ Finally {
             Copy-Item "$ControlRoot\daemon\daemon.log" "$ORIGTEMP\CIDControl.log" -Force -ErrorAction SilentlyContinue
         }
     }
+
+    if ($CaptureHCSTraces) {
+        Write-Host -ForegroundColor green "INFO: Stopping HCS Argon tracing"
+       if (Test-Path "$ORIGTEMP\HcsTrace.etl") {
+           Remove-Item "$ORIGTEMP\HcsTrace.etl" -ErrorAction SilentlyContinue -Force | Out-Null
+        }
+        Wpr.exe -stop "$ORIGTEMP\HcsTrace.etl" "Hcs Argon Tracing"
+        Write-Host -foregroundcolor green "INFO: HCS Argon tracing saved to $ORIGTEMP\HcsTrace.etl"
+    }
+
 
     if ($ConfigJSONBackedUp -eq $true) {
         Write-Host -ForegroundColor green "INFO: Restoring $env:ProgramData\docker\config\daemon.json"
