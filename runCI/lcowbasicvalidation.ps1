@@ -126,12 +126,12 @@ Try {
     Write-Host "`n`n"
 
     # Exit to ensure Jenkins captures it. Don't do this in the ISE or interactive Powershell - they will catch the Throw onwards.
-    if ( ([bool]([Environment]::GetCommandLineArgs() -Like '*-NonInteractive*')) -and `
-         ([bool]([Environment]::GetCommandLineArgs() -NotLike "*Powershell_ISE.exe*"))) {
-        exit 1
-    }
-    Throw $_
+#    if ( ([bool]([Environment]::GetCommandLineArgs() -Like '*-NonInteractive*')) -and `
+#         ([bool]([Environment]::GetCommandLineArgs() -NotLike "*Powershell_ISE.exe*"))) {
+#        exit 1
+#    }
     exit 1
+    #Throw $_
 }
 Finally {
     $ErrorActionPreference="SilentlyContinue"
