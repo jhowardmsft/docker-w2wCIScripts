@@ -8,11 +8,11 @@
 
 $ErrorActionPreference = 'Stop'
 $StartTime=Get-Date
-#$env:DOCKER_DUT_DEBUG="yes" # Comment out to not be in debug mode
 
-# Put here to be blindingly obvious. The production jenkins.dockerproject.org Linux-container 
-# CI job is "Docker-PRs-LoW-RS3". Force into LCOW mode for this run.
+# Put up top to be blindingly obvious. The production jenkins.dockerproject.org Linux-container 
+# CI job is "Docker-PRs-LoW-RS3". Force into LCOW mode for this run, or not.
 if ($env:BUILD_TAG -match "-LoW") { $env:LCOW_MODE=1 }
+if ($env:BUILD_TAG -match "-WoW") { $env:LCOW_MODE="" }
 
 
 # -------------------------------------------------------------------------------------------
@@ -102,9 +102,10 @@ if ($env:BUILD_TAG -match "-LoW") { $env:LCOW_MODE=1 }
 #    & $CISCRIPT_LOCAL_LOCATION
 # -------------------------------------------------------------------------------------------
 
-$SCRIPT_VER="22-Jun-2017 12:16 PDT" 
+$SCRIPT_VER="26-Jun-2017 20:49 PDT" 
 $FinallyColour="Cyan"
 
+#$env:DOCKER_DUT_DEBUG="yes" # Comment out to not be in debug mode
 #$env:SKIP_UNIT_TESTS="yes"
 #$env:SKIP_VALIDATION_TESTS="yes"
 #$env:SKIP_ZAP_DUT=""
@@ -860,15 +861,6 @@ Try {
             {
                 Throw ("Failed to download: $_")
             }
-
-			#Working on this. Under Jenkins, it didn't detect a failure. So trying invoke-exporession as per the WCOW way
-            #$start=(Get-Date); 
-            #Try { 
-            #    & "$env:TEMP\binary\lcowbasicvalidation.ps1" 
-            #    #& "e:\docker\ci\w2w\runci\lcowbasicvalidation.ps1" 
-            #} Catch [Exception] { 
-            #    Throw "ERROR: LCOW tests failed at $(Get-Date) with error $_" 
-            #}
 
             # Explicit to not use measure-command otherwise don't get output as it goes
             $ErrorActionPreference = "Stop"
