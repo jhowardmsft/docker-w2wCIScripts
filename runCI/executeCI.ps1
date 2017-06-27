@@ -870,15 +870,14 @@ Try {
             #    Throw "ERROR: LCOW tests failed at $(Get-Date) with error $_" 
             #}
 
-			# Explicit to not use measure-command otherwise don't get output as it goes
-            $start=(Get-Date); Invoke-Expression "powershell $env:TEMP\binary\lcowbasicvalidation.ps1"; echo "Last exit code $lastExitCode, _ is $_"; $Duration=New-Timespan -Start $start -End (Get-Date)
-
-			
-
+            # Explicit to not use measure-command otherwise don't get output as it goes
             $ErrorActionPreference = "Stop"
+            $start=(Get-Date); Invoke-Expression "powershell $env:TEMP\binary\lcowbasicvalidation.ps1"; $lec=$lastExitCode; $Duration=New-Timespan -Start $start -End (Get-Date)
             $Duration=New-Timespan -Start $start -End (Get-Date)
             Write-Host  -ForegroundColor Green "INFO LCOW tests ended at $(Get-Date). Duration`:$Duration"
-
+            if ($lec -ne 0) {
+                Throw "LCOW validation tests failed"
+            }
         } else {
             Write-Host -ForegroundColor Magenta "WARN: Skipping LCOW tests"
         }
