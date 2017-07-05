@@ -277,10 +277,7 @@ Try {
     Copy-Item ..\common\Bootstrap.ps1 "$driveletter`:\packer\"
 
     # Files for test-signing and copying privates
-	# certutil is inbox! Don't use the bin directory as this gets generated much later in the build.
-    #Copy-Item ("\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\bin\certutil.exe") "$driveLetter`:\privates\"
-	Copy-Item "\\sesdfs\1windows\TestContent\CORE\Base\HYP\HAT\setup\testroot-sha2.cer" "$driveLetter`:\privates\"
-    #Copy-Item ("\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\bin\testroot-sha2.cer") "$driveLetter`:\privates\"
+    Copy-Item "\\sesdfs\1windows\TestContent\CORE\Base\HYP\HAT\setup\testroot-sha2.cer" "$driveLetter`:\privates\"
     Copy-Item ("\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\test_automation_bins\idw\sfpcopy.exe") "$driveLetter`:\privates\"
 
     # We need NuGet
@@ -323,7 +320,7 @@ Try {
     # Note also the use of c:\packer\PreBootStrappedOnce.txt so that on the first specialize pass to add the scheduled task,
     # we make sure the VM is re-sysprepped, not re-started.
     $prebootstrap = `
-       "c:\privates\certutil -addstore root c:\privates\testroot-sha2.cer`n" + `
+       "certutil.exe -addstore root c:\privates\testroot-sha2.cer`n" + `
        "bcdedit /set `"{current}`" testsigning on`n" + `
        "set-executionpolicy bypass`n" + `
        "`$wc=New-Object net.webclient;`$wc.Downloadfile(`"https://raw.githubusercontent.com/jhowardmsft/docker-w2wCIScripts/master/common/Bootstrap.ps1`",`"c:\w2w\common\Bootstrap.ps1`")`n" + `
