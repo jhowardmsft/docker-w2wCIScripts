@@ -78,8 +78,10 @@ if ($env:BUILD_TAG -match "-WoW") { $env:LCOW_MODE="" }
 #                             docker integration tests are also coded to use the same
 #                             environment variable, and if no set, defaults to microsoft/windowsservercore
 #
-#    LCOW_MODE                if defined, does very basic LCOW verification. Ultimately we 
+#    LCOW_BASIC_MODE          if defined, does very basic LCOW verification. Ultimately we 
 #                             want to run the entire CI suite from docker, but that's a way off.
+#                            
+#    LCOW_MODE                if defined, runs the entire CI suite
 #                            
 # -------------------------------------------------------------------------------------------
 #
@@ -577,7 +579,7 @@ Try {
     New-Item -ItemType Directory $env:TEMP\daemon -ErrorAction SilentlyContinue  | Out-Null
 
     # In LCOW mode, for now we need to set an environment variable before starting the daemon under test
-    if ($env:LCOW_MODE -ne $Null) {
+    if (($env:LCOW_MODE -ne $Null) -or ($env:LCOW_BASIC_MODE -ne $Null)) {
         $env:LCOW_SUPPORTED=1
     }
 
@@ -590,7 +592,7 @@ Try {
     $daemonStarted=1
 
     # In LCOW mode, turn off that variable
-    if ($env:LCOW_MODE -ne $Null) {
+    if (($env:LCOW_MODE -ne $Null) -or ($env:LCOW_BASIC_MODE -ne $Null)) {
         $env:LCOW_SUPPORTED=""
     }
 
@@ -658,7 +660,7 @@ Try {
     Write-Host
 
     # Don't need Windows images when in LCOW mode.
-    if ($env:LCOW_MODE -eq $Null) {
+    if (($env:LCOW_MODE -eq $Null) -and ($env:LCOW_BASIC_MODE -eq $Null)) {
 
         # Default to windowsservercore for the base image used for the tests. The "docker" image
         # and the control daemon use microsoft/windowsservercore regardless. This is *JUST* for the tests.
@@ -726,7 +728,7 @@ Try {
 
     # Note the unit tests won't work in LCOW mode as I turned off loading the base images above.
     # Run the unit tests inside a container unless SKIP_UNIT_TESTS is defined
-    if ($env:LCOW_MODE -eq $Null) {
+    if (($env:LCOW_MODE -eq $Null) -and ($env:LCOW_BASIC_MODE -eq $Null)) {
         if ($env:SKIP_UNIT_TESTS -eq $null) {
             Write-Host -ForegroundColor Cyan "INFO: Running unit tests at $(Get-Date)..."
             $ErrorActionPreference = "SilentlyContinue"
@@ -742,7 +744,7 @@ Try {
     }
 
     # Add the Windows busybox image. Needed for WCOW integration tests
-    if ($env:LCOW_MODE -eq $Null) {
+    if (($env:LCOW_MODE -eq $Null) -and ($env:LCOW_BASIC_MODE -eq $Null)) {
         if ($env:SKIP_INTEGRATION_TESTS -eq $null) {
             $ErrorActionPreference = "SilentlyContinue"
             # Build it regardless while switching between nanoserver and windowsservercore
@@ -783,7 +785,7 @@ Try {
     }
 
     # Run the WCOW integration tests unless SKIP_INTEGRATION_TESTS is defined
-    if ($env:LCOW_MODE -eq $Null) {
+    if (($env:LCOW_MODE -eq $Null) -and ($env:LCOW_BASIC_MODE -eq $Null)) {
         if ($env:SKIP_INTEGRATION_TESTS -eq $null) {
             Write-Host -ForegroundColor Cyan "INFO: Running integration tests at $(Get-Date)..."
             $ErrorActionPreference = "SilentlyContinue"
@@ -852,24 +854,51 @@ Try {
             # Force to use the test binaries, not the host ones.
             $env:PATH="$env:TEMP\binary;$env:PATH;"  
 
-            $wc = New-Object net.webclient
-            try {
-                Write-Host -ForegroundColor green "INFO: Downloading latest execution script..."
-                $wc.Downloadfile("https://raw.githubusercontent.com/jhowardmsft/docker-w2wCIScripts/master/runCI/lcowbasicvalidation.ps1", "$env:TEMP\binary\lcowbasicvalidation.ps1")
-            } 
-            catch [System.Net.WebException]
-            {
-                Throw ("Failed to download: $_")
-            }
+            if ($env:LCOW_BASIC_MODE -ne $null) {
+                $wc = New-Object net.webclient
+                try {
+                    Write-Host -ForegroundColor green "INFO: Downloading latest execution script..."
+                    $wc.Downloadfile("https://raw.githubusercontent.com/jhowardmsft/docker-w2wCIScripts/master/runCI/lcowbasicvalidation.ps1", "$env:TEMP\binary\lcowbasicvalidation.ps1")
+                } 
+                catch [System.Net.WebException]
+                {
+                    Throw ("Failed to download: $_")
+                }
 
-            # Explicit to not use measure-command otherwise don't get output as it goes
-            $ErrorActionPreference = "Stop"
-            $start=(Get-Date); Invoke-Expression "powershell $env:TEMP\binary\lcowbasicvalidation.ps1"; $lec=$lastExitCode; $Duration=New-Timespan -Start $start -End (Get-Date)
-            $Duration=New-Timespan -Start $start -End (Get-Date)
-            Write-Host  -ForegroundColor Green "INFO LCOW tests ended at $(Get-Date). Duration`:$Duration"
-            if ($lec -ne 0) {
-                Throw "LCOW validation tests failed"
+                # Explicit to not use measure-command otherwise don't get output as it goes
+                $ErrorActionPreference = "Stop"
+                $start=(Get-Date); Invoke-Expression "powershell $env:TEMP\binary\lcowbasicvalidation.ps1"; $lec=$lastExitCode; $Duration=New-Timespan -Start $start -End (Get-Date)
+                $Duration=New-Timespan -Start $start -End (Get-Date)
+                Write-Host  -ForegroundColor Green "INFO: LCOW tests ended at $(Get-Date). Duration`:$Duration"
+                if ($lec -ne 0) {
+                    Throw "LCOW validation tests failed"
+                }
+            } else {
+                #https://blogs.technet.microsoft.com/heyscriptingguy/2011/09/20/solve-problems-with-external-command-lines-in-powershell/ is useful to see tokenising
+                $c = "go test "
+                $c += "`"-check.v`" "
+                if ($env:INTEGRATION_TEST_NAME -ne $null) { # Makes is quicker for debugging to be able to run only a subset of the integration tests
+                    $c += "`"-check.f`" "
+                    $c += "`"$env:INTEGRATION_TEST_NAME`" "
+                    Write-Host -ForegroundColor Magenta "WARN: Only running LCOW integration tests matching $env:INTEGRATION_TEST_NAME"
+                }
+                $c += "`"-tags`" " + "`"autogen`" "
+                $c += "`"-check.timeout`" " + "`"10m`" "
+                $c += "`"-test.timeout`" " + "`"200m`" "
+
+                Write-Host -ForegroundColor Green "INFO: LCOW Integration tests being run from the host:"
+                cd "$env:SOURCES_DRIVE`:\$env:SOURCES_SUBDIR\src\github.com\docker\docker\integration-cli"
+                Write-Host -ForegroundColor Green "INFO: $c"
+                Write-Host -ForegroundColor Green "INFO: DOCKER_HOST at $DASHH_CUT"
+                # Explicit to not use measure-command otherwise don't get output as it goes
+                $start=(Get-Date); Invoke-Expression $c; $Duration=New-Timespan -Start $start -End (Get-Date)
+
             }
+            $ErrorActionPreference = "Stop"
+            if (-not($LastExitCode -eq 0)) {
+                Throw "ERROR: Integration tests failed at $(Get-Date). Duration`:$Duration"
+            }
+            Write-Host  -ForegroundColor Green "INFO: Integration tests ended at $(Get-Date). Duration`:$Duration"
         } else {
             Write-Host -ForegroundColor Magenta "WARN: Skipping LCOW tests"
         }

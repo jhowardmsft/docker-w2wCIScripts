@@ -151,6 +151,9 @@
 .Parameter IntegrationInContainer
    Skips the download of docker.exe and dockerd.exe
 
+.Parameter LCOWBasic
+   Enables -basic- Linux-Containers-On-Windows (LCOW) mode for daemon under test
+
 .Parameter LCOW
    Enables Linux-Containers-On-Windows (LCOW) mode for daemon under test
 
@@ -194,6 +197,7 @@ param(
     [Parameter(Mandatory=$false)][string]$WindowsBaseImage="",
     [Parameter(Mandatory=$false)][switch]$SkipControlDownload=$False,
     [Parameter(Mandatory=$false)][switch]$IntegrationInContainer=$False,
+    [Parameter(Mandatory=$false)][switch]$LCOWBasic=$False,
     [Parameter(Mandatory=$false)][switch]$LCOW=$False,
     [Parameter(Mandatory=$false)][switch]$CaptureHCSTraces=$False
 )
@@ -531,6 +535,10 @@ Try {
     if ($IntegrationInContainer) {
         $env:INTEGRATION_IN_CONTAINER = "Yes"
     }
+    $env:LCOW_BASIC_MODE=""
+    if ($LCOWBasic) {
+        $env:LCOW_BASIC_MODE = "Yes"
+    }
     $env:LCOW_MODE=""
     if ($LCOW) {
         $env:LCOW_MODE = "Yes"
@@ -612,7 +620,8 @@ Try {
     Write-Host " - Skip download:     $SkipControlDownload"
     Write-Host " - Skip copy go:      $SkipCopyGo"
     Write-Host " - Test in container: $IntegrationInContainer"
-    Write-Host " - LCOW Mode:         $LCOW"
+    Write-Host " - LCOW Basic Mode:   $LCOWBasic"
+    Write-Host " - LCOW (Full) Mode:  $LCOW"
     Write-Host " - HCS Tracing:       $CaptureHCSTraces"
     if ($SkipIntegrationTests -eq $false) {
         if (-not ([string]::IsNullOrWhiteSpace($IntegrationTestName))) {
