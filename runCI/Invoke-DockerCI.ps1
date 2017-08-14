@@ -205,7 +205,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $FinallyColour="Cyan"
 $DOCKER_DEFAULT_BASEPATH="https://master.dockerproject.org/windows/x86_64"
-$GIT_DEFAULT_LOCATION="https://github.com/git-for-windows/git/releases/download/v2.10.1.windows.1/Git-2.10.1-64-bit.exe"
+$GIT_DEFAULT_LOCATION="https://github.com/git-for-windows/git/releases/download/v2.14.1.windows.1/Git-2.14.1-64-bit.exe"
 $ConfigJSONBackedUp=$False
 $CISCRIPT_DEFAULT_LOCATION = "https://raw.githubusercontent.com/jhowardmsft/docker-w2wCIScripts/master/runCI/executeCI.ps1"
 $HCS_TRACE_PROFILE = "https://gist.githubusercontent.com/jhowardmsft/71b37956df0b4248087c3849b97d8a71/raw/72e14a6d2e86d3ccdefea5766d09d6a9fc053f25/HcsTraceProfile.wprp"
