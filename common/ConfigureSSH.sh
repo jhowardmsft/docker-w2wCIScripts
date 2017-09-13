@@ -10,6 +10,7 @@ rm -r /etc/ssh* /var/empty /var/log/sshd.log /var/log/lastlog /etc/passwd ~/.ssh
 mkdir ~/.ssh
 /usr/bin/ssh-host-config -y -w `openssl rand -base64 32` -c "binmode ntsec"
 echo "PasswordAuthentication no" >> /etc/sshd_config
+echo "ClientAliveInterval 15" >> /etc/sshd_config
 chmod 700 ~/.ssh
 cp /cygdrive/c/packer/authorized_keys ~/.ssh/authorized_keys
 chmod 644 ~/.ssh/authorized_keys
