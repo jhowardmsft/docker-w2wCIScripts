@@ -8,7 +8,7 @@
 # server, but also turns on KD, net uses to the machine where
 # the development sources are, installs VSCode & LiteIDE, 
 # creates a shortcut for a development prompt, plus sets auto-logon.
-# Also assumes that this is running from \\redmond\osg\teams\....\team\jhoward\docker\ci\w2w\Install-DevVM
+# Also assumes that this is running from \\sesdfs.corp.microsoft.com\osg\teams\....\team\jhoward\docker\ci\w2w\Install-DevVM
 
 param(
     [Parameter(Mandatory=$false)][string]$ConfigSet,
@@ -202,7 +202,7 @@ Try {
         Write-Host "INFO: Creating c:\liteide"
         mkdir c:\liteide -ErrorAction SilentlyContinue
         Write-Host "INFO: Copying liteide..."
-        xcopy \\redmond\osg\Teams\CORE\BASE\HYP\Team\jhoward\Docker\Install\liteide\liteidex30.2.windows-qt4\liteide\* c:\liteide /s /Y
+        xcopy \\sesdfs.corp.microsoft.com\osg\Teams\CORE\BASE\HYP\Team\jhoward\Docker\Install\liteide\liteidex30.2.windows-qt4\liteide\* c:\liteide /s /Y
         if (-not ($env:PATH -like '*c:\liteide\bin*'))   { $env:Path = "c:\liteide\bin;$env:Path" }
         setx "PATH" "$env:PATH" /M
     }
@@ -255,7 +255,7 @@ Try {
 
         # https://github.com/microsoft/wim2img (Microsoft Internal)
         Write-Host "INFO: Installing containers module for image conversion"
-        Register-PackageSource -Name HyperVDev -Provider PowerShellGet -Location \\redmond\1Windows\TestContent\CORE\Base\HYP\HAT\packages -Trusted -Force | Out-Null
+        Register-PackageSource -Name HyperVDev -Provider PowerShellGet -Location \\sesdfs.corp.microsoft.com\1Windows\TestContent\CORE\Base\HYP\HAT\packages -Trusted -Force | Out-Null
         Install-Module -Name Containers.Layers -Repository HyperVDev | Out-Null
         Import-Module Containers.Layers | Out-Null
 
