@@ -443,7 +443,7 @@ Function Get-ImageTar {
 
         # https://github.com/microsoft/wim2img (Microsoft Internal)
         Write-Host -ForegroundColor green "INFO: Installing containers module for image conversion"
-        Register-PackageSource -Name HyperVDev -Provider PowerShellGet -Location \\redmond\1Windows\TestContent\CORE\Base\HYP\HAT\packages -Trusted -Force | Out-Null
+        Register-PackageSource -Name HyperVDev -Provider PowerShellGet -Location \\sesdfs.corp.microsoft.com\1Windows\TestContent\CORE\Base\HYP\HAT\packages -Trusted -Force | Out-Null
         Install-Module -Name Containers.Layers -Repository HyperVDev | Out-Null
         Import-Module Containers.Layers | Out-Null
             

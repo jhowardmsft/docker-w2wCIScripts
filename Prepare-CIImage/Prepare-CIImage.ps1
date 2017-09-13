@@ -287,7 +287,7 @@ Try {
 
      if (-not $SkipBaseImages) {
         # https://github.com/microsoft/wim2img (Microsoft Internal)
-        Register-PackageSource -Name HyperVDev -Provider PowerShellGet -Location \\redmond\1Windows\TestContent\CORE\Base\HYP\HAT\packages -Trusted -Force | Out-Null
+        Register-PackageSource -Name HyperVDev -Provider PowerShellGet -Location \\sesdfs.corp.microsoft.com\1Windows\TestContent\CORE\Base\HYP\HAT\packages -Trusted -Force | Out-Null
         Write-Host "INFO: Installing Containers.Layers module..."
         Install-Module -Name Containers.Layers -Repository HyperVDev | Out-Null
         Write-Host "INFO: Importing Containers.Layers..."
