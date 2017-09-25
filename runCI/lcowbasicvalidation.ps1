@@ -1,5 +1,4 @@
-﻿#
-# Jenkins CI scripts for Windows LCOW CI
+﻿# Jenkins CI scripts for Windows LCOW CI
 # By John Howard (@jhowardmsft) June 2017.
 #
 # These are very basic tests, NOT the integration CLI
@@ -41,7 +40,7 @@ Function Setup-Build([string]$dfContent) {
 
 
 Function Do-Pull([string]$imageName) {
-    Try-Command "docker pull $imageName" $true ""
+    Try-Command "docker pull --platform=linux $imageName" $true ""
     Try-Command 'docker images --format "{{.Repository}}:{{.ID}}"' $true "$imageName`:"
 }
 
@@ -82,18 +81,52 @@ Try {
     # Ping
     Try-Command "docker run --rm busybox ping -c 3 www.microsoft.com" $true "64 bytes from"
 
-
     # Build
-    Setup-Build '
-     # platform=linux
-     FROM busybox
-     ENV "Goldens" "Are the best dogs"
-     RUN export
-    '
+    Setup-Build '#platform=linux
+FROM busybox
+ENV "Goldens" "Are the best dogs"
+RUN export'
     Try-Command 'docker build .'  $true "export Goldens='Are the best dogs'"
     Remove-Item ".\dockerfile" #-force -ErrorAction SilentlyContinue
 
+	# WORKDIR command in build
+    Setup-Build '#platform=linux
+FROM busybox
+WORKDIR /etc
+RUN ls -l'
+    Try-Command 'docker build .'  $true "resolv.conf"
+    Remove-Item ".\dockerfile" #-force -ErrorAction SilentlyContinue
+	
+	# workdir works in run
+	Try-Command 'docker run --name bbcontainer --workdir=/etc busybox ls -l' $true "resolv.conf"
 
+	# Volume in run and docker cp from a container
+	$temp = [System.Guid]::NewGuid()
+    $dir = "$env:TEMP\$temp"
+    New-Item -type directory -Path $dir | Out-Null
+    cd $dir
+	$cd = $(pwd).Path
+	Try-Command "docker cp bbcontainer:/bin/uname $cd" $true
+	Try-Command "docker run -v $cd`:/testing --rm busybox ls -l /testing" $true "uname"
+
+#	# SCRATCH with our added uname
+#	Setup-Build '#platform=linux
+#FROM scratch
+#ADD uname /
+#RUN /uname'
+#	$cd = $(pwd).Path
+#	Try-Command "docker cp bbcontainer:/bin/uname $cd" $true
+#	Try-Command 'docker build .' $true
+	
+	# Delete the  bbcontainer container
+	Try-Command 'docker rm bbcontainer'
+		
+	# Load nanoserver
+	Try-Command "docker load -i c:\baseimages\nanoserver.tar" $true
+	
+	# And run nanoserver to make sure it works as well
+	Try-Command "docker run --rm microsoft/nanoserver cmd /s /c dir c:\windows\system32\nt*.dll" $true "ntdll.dll"
+		
     # Run a container, commit it, make sure it shows up in the list of images, and that when we run it, the change was present.
     Try-Command "docker run --name commitme busybox mkdir /john" $true ""
     $sha = Try-Command "docker commit commitme committed" $true "sha256:"   # sha256 is printed on the line after a commit
