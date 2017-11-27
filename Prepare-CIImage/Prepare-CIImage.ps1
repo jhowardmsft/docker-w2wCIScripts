@@ -205,6 +205,8 @@ Try {
 		Write-Host "INFO: nanoserver base image found"
 	}
 
+	$latestGCS = $(gci \\redmond\wsscfs\OSTC-Public\Builds\*master* | where { $_.PSIsContainer } | sort CreationTime -Descending | select -First 1)
+	
     # Make sure the target location exists
     if (-not (Test-Path $target)) { Throw "$target could not be found" }
 
@@ -269,6 +271,7 @@ Try {
     if (-not (Test-Path "$driveLetter`:\privates"))   {New-Item -ItemType Directory "$driveLetter`:\privates" | Out-Null}
     if (-not (Test-Path "$driveLetter`:\baseimages")) {New-Item -ItemType Directory "$driveLetter`:\baseimages" | Out-Null}
     if (-not (Test-Path "$driveLetter`:\w2w"))        {New-Item -ItemType Directory "$driveLetter`:\w2w" | Out-Null}
+    if (-not (Test-Path "$driveLetter`:\lcow"))        {New-Item -ItemType Directory "$driveLetter`:\lcow" | Out-Null}
 
     # The entire repo of w2w (we need this for a dev-vm scenario - bootstrap.ps1 makes that decision
     Copy-Item ..\* "$driveletter`:\w2w" -Recurse -Force
@@ -279,6 +282,11 @@ Try {
     # Files for test-signing and copying privates
     Copy-Item "\\sesdfs\1windows\TestContent\CORE\Base\HYP\HAT\setup\testroot-sha2.cer" "$driveLetter`:\privates\"
     Copy-Item ("\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\test_automation_bins\idw\sfpcopy.exe") "$driveLetter`:\privates\"
+
+    # Files for Linux containers
+    Copy-Item $latestGCS\bootx64.efi "$driveletter`:\lcow\"
+    Copy-Item $latestGCS\initrd.img "$driveletter`:\lcow\"
+    echo $latestGCS >  "$driveletter`:\lcow\gcs.version"
 
     # We need NuGet
     Write-Host "INFO: Installing NuGet package provider..."
