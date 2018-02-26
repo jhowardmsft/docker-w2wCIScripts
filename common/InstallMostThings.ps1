@@ -7,11 +7,11 @@
 # not just a CI server. Note Git is a full location, not a version as interim releases have more than just the version in the path.
 echo "$(date) InstallMostThings.ps1 starting" >> $env:SystemDrive\packer\configure.log
 
-$GIT_LOCATION="https://github.com/git-for-windows/git/releases/download/v2.14.1.windows.1/PortableGit-2.14.1-64-bit.7z.exe"
+$GIT_LOCATION="https://github.com/git-for-windows/git/releases/download/v2.16.2.windows.1/PortableGit-2.16.2-64-bit.7z.exe" #2/26/2018
 #$JDK_LOCATION="http://download.oracle.com/otn-pub/java/jdk/8u144-b01/090f390dda5b47b9b721c7dfaa008135/jdk-8u144-windows-x64.exe" #8/14/2017
 #$JDK_LOCATION="http://download.oracle.com/otn-pub/java/jdk/9.0.1+11/jdk-9.0.1_windows-x64_bin.exe"
 $JDK_LOCATION="https://winrs1.blob.core.windows.net/jdk/jdk-8u151-windows-x64.exe"
-$NPP_LOCATION="https://notepad-plus-plus.org/repository/7.x/7.4.2/npp.7.4.2.Installer.x64.exe" # 8/14/2017
+$NPP_LOCATION="https://notepad-plus-plus.org/repository/7.x/7.5.4/npp.7.5.4.Installer.x64.exe" # 2/26/2018
 $DOCKER_LOCATION="https://master.dockerproject.org/windows/x86_64"
 $DELVE_LOCATION="github.com/derekparker/delve/cmd/dlv"
 
