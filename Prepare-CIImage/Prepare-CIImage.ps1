@@ -231,6 +231,7 @@ Try {
             if (Test-Path $targetSubdir) { Remove-Item $targetSubdir -Force -Recurse -ErrorAction SilentlyContinue }
         }
 
+        Write-Host "INFO: Source $vhdSource"
         Write-Host "INFO: Copying the VHD to $targetSubdir. This may take some time..."
         if (Test-Path (Join-Path $targetSubdir -ChildPath $vhdFilename)) { Remove-Item (Join-Path $targetSubdir -ChildPath $vhdFilename) -force }
         if (-not (Test-Path $targetSubdir)) { New-Item $targetSubdir -ItemType Directory | Out-Null }
