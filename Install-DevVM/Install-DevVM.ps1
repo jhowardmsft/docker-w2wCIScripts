@@ -18,7 +18,7 @@ $ErrorActionPreference = 'Stop'
 
 
 # BUGBUG GET RID OF THESE
-$DEV_MACHINE="jhoward-z420"
+$DEV_MACHINE="jhoward-p520"
 $DEV_MACHINE_DRIVE="e"
 
 function Test-Nano() {  
