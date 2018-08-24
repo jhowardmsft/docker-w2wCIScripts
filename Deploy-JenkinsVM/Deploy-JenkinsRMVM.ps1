@@ -20,15 +20,15 @@ if ([string]::IsNullOrWhiteSpace($Password)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($ImageVersion)) {
-     Throw "ImageVersion must be supplied. It's the nnnnn bit in AzureRS1vnnnnn.vhd for example"
+     Throw "ImageVersion must be supplied. It's the nnnnn bit in AzureRS4vnnnnn.vhd for example"
 }
 
 if ([string]::IsNullOrWhiteSpace($ConfigSet)) {
-     Throw "ConfigSet must be supplied. It's the rs bit in AzureRS1vnnnnn.vhd for example"
+     Throw "ConfigSet must be supplied. It's the rs bit in AzureRS4vnnnnn.vhd for example"
 }
 
 if ([string]::IsNullOrWhiteSpace($RedstoneRelease)) {
-     Throw "RedstoneRelease must be supplied. It's the X bit in AzureRS3vnnnnn.vhd for example"
+     Throw "RedstoneRelease must be supplied. It's the 4 bit in AzureRS4vnnnnn.vhd for example"
 }
 
 if ([string]::IsNullOrWhiteSpace($ResourceGroupName)) {
@@ -36,7 +36,7 @@ if ([string]::IsNullOrWhiteSpace($ResourceGroupName)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($ImageName)) {
-     Throw "ImageName must be supplied. It's azurers3v5 for example"
+     Throw "ImageName must be supplied. It's azurers4v5 for example"
 }
 
 $ErrorActionPreference = 'Stop'
@@ -55,6 +55,9 @@ function ask {
 try {
     if ([string]::IsNullOrWhiteSpace($vmName)) { Throw("vmName parameter must be supplied") }
 
+	echo "INFO: vmName:              $vmName"
+	echo "INFO: ResourceGroupName:   $ResourceGroupName"
+	echo "INFO: ImageName:           $imageName"
     Write-Host "INFO: Checking if VM $vmName exists"
     $vm = Get-AzureRMVM -Name $vmName -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
     if ($vm -ne $null) {
@@ -63,10 +66,12 @@ try {
         Write-Host "INFO: Deleting VM..."
         Remove-AzureRMVM -Name $vmName -ResourceGroupName $ResourceGroupName
     }
+	echo "After Get-AzureRMVM"
 
     # Useful - keep me.
     # Get-AzureRMImage | Where-Object { $_.Name -like "*$ConfigSet*" } | Sort-Object -Descending CreatedTime
 
+	echo "INFO: Looking for image $imageName"
     $Image = Get-AzureRMImage | Where-Object { $_.Name -eq $imageName }
     Write-Host "INFO: $($Image.Id)"
     
