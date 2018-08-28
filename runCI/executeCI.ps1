@@ -104,7 +104,7 @@ if ($env:BUILD_TAG -match "-WoW") { $env:LCOW_MODE="" }
 #    & $CISCRIPT_LOCAL_LOCATION
 # -------------------------------------------------------------------------------------------
 
-$SCRIPT_VER="26-Jun-2017 20:49 PDT" 
+$SCRIPT_VER="27-Aug-2018 17:30 PDT"
 $FinallyColour="Cyan"
 
 #$env:DOCKER_DUT_DEBUG="yes" # Comment out to not be in debug mode
@@ -934,14 +934,15 @@ Try {
 Catch [Exception] {
     $FinallyColour="Red"
     Write-Host -ForegroundColor Red ("`r`n`r`nERROR: Failed '$_' at $(Get-Date)")
+    Write-Host -ForegroundColor Red ($_.InvocationInfo.PositionMessage)
     Write-Host "`n`n"
 
-    # Exit to ensure Jenkins captures it. Don't do this in the ISE or interactive Powershell - they will catch the Throw onwards.
-    if ( ([bool]([Environment]::GetCommandLineArgs() -Like '*-NonInteractive*')) -and `
-         ([bool]([Environment]::GetCommandLineArgs() -NotLike "*Powershell_ISE.exe*"))) {
+Â  Â  # Exit to ensure Jenkins captures it. Don't do this in the ISE or interactive Powershell - they will catch the Throw onwards.
+Â  Â  if ( ([bool]([Environment]::GetCommandLineArgs() -Like '*-NonInteractive*')) -and `
+Â  Â  Â  Â Â  ([bool]([Environment]::GetCommandLineArgs() -NotLike "*Powershell_ISE.exe*"))) {
         exit 1
-    }
-    Throw $_
+Â  Â  }
+Â  Â  Throw $_
 }
 Finally {
     $ErrorActionPreference="SilentlyContinue"
