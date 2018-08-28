@@ -104,6 +104,7 @@ if ($env:BUILD_TAG -match "-WoW") { $env:LCOW_MODE="" }
 #    & $CISCRIPT_LOCAL_LOCATION
 # -------------------------------------------------------------------------------------------
 
+
 $SCRIPT_VER="28-Aug-2018 09:33 PDT" 
 $FinallyColour="Cyan"
 
@@ -947,6 +948,7 @@ Try {
 Catch [Exception] {
     $FinallyColour="Red"
     Write-Host -ForegroundColor Red ("`r`n`r`nERROR: Failed '$_' at $(Get-Date)")
+    Write-Host -ForegroundColor Red ($_.InvocationInfo.PositionMessage)
     Write-Host "`n`n"
 
     # Exit to ensure Jenkins captures it. Don't do this in the ISE or interactive Powershell - they will catch the Throw onwards.
