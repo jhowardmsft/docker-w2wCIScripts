@@ -104,7 +104,8 @@ if ($env:BUILD_TAG -match "-WoW") { $env:LCOW_MODE="" }
 #    & $CISCRIPT_LOCAL_LOCATION
 # -------------------------------------------------------------------------------------------
 
-$SCRIPT_VER="26-Jun-2017 20:49 PDT" 
+
+$SCRIPT_VER="28-Aug-2018 09:33 PDT" 
 $FinallyColour="Cyan"
 
 #$env:DOCKER_DUT_DEBUG="yes" # Comment out to not be in debug mode
@@ -431,7 +432,20 @@ Try {
 
     # CI Integrity check - ensure Dockerfile.windows and Dockerfile go versions match
     $goVersionDockerfileWindows=$(Get-Content ".\Dockerfile.windows" | Select-String "ENV GO_VERSION").ToString().Replace("ENV GO_VERSION=","").Replace("\","").Replace("``","").Trim()
-    $goVersionDockerfile=$(Get-Content ".\Dockerfile" | Select-String "ENV GO_VERSION").ToString().Split(" ")[2]
+    $goVersionDockerfile=$(Get-Content ".\Dockerfile" | Select-String "ENV GO_VERSION")
+    
+    # As of go 1.11, Dockerfile changed to be in the format `FROM golang:1.11 AS base"
+    if ($goVersionDockerfile -eq $Null) {
+        $goVersionDockerfile=$(Get-Content ".\Dockerfile" | Select-String "FROM golang:")
+        if ($goVersionDockerfile -ne $Null) {
+            $goVersionDockerfile = $goVersionDockerfile.ToString().Split(" ")[1].Split(":")[1]
+        }
+    } else {
+        $goVersionDockerfile = $goVersionDockerfile.ToString().Split(" ")[2]
+    }
+    if ($goVersionDockerfile -eq $Null) {
+        Throw "ERROR: Failed to extract golang version from Dockerfile"
+    }
     Write-Host  -ForegroundColor Green "INFO: Validating GOLang consistency in Dockerfile.windows..."
     if (-not ($goVersionDockerfile -eq $goVersionDockerfileWindows)) {
         Throw "ERROR: Mismatched GO versions between Dockerfile and Dockerfile.windows. Update your PR to ensure that both files are updated and in sync. $goVersionDockerfile $goVersionDockerfileWindows"
@@ -934,14 +948,15 @@ Try {
 Catch [Exception] {
     $FinallyColour="Red"
     Write-Host -ForegroundColor Red ("`r`n`r`nERROR: Failed '$_' at $(Get-Date)")
+    Write-Host -ForegroundColor Red ($_.InvocationInfo.PositionMessage)
     Write-Host "`n`n"
 
-    # Exit to ensure Jenkins captures it. Don't do this in the ISE or interactive Powershell - they will catch the Throw onwards.
-    if ( ([bool]([Environment]::GetCommandLineArgs() -Like '*-NonInteractive*')) -and `
-         ([bool]([Environment]::GetCommandLineArgs() -NotLike "*Powershell_ISE.exe*"))) {
+    # Exit to ensure Jenkins captures it. Don't do this in the ISE or interactive Powershell - they will catch the Throw onwards.
+    if ( ([bool]([Environment]::GetCommandLineArgs() -Like '*-NonInteractive*')) -and `
+         ([bool]([Environment]::GetCommandLineArgs() -NotLike "*Powershell_ISE.exe*"))) {
         exit 1
-    }
-    Throw $_
+    }
+    Throw $_
 }
 Finally {
     $ErrorActionPreference="SilentlyContinue"
