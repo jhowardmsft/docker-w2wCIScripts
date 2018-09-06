@@ -296,7 +296,7 @@ Try {
 
     # Make sure we are in repo
     if (-not (Test-Path -PathType Leaf -Path ".\Dockerfile.windows")) {
-        Throw "$(pwd) does not container Dockerfile.Windows!"
+        Throw "$(pwd) does not contain Dockerfile.windows!"
     }
     Write-Host  -ForegroundColor Green "INFO: docker/docker repository was found"
 
