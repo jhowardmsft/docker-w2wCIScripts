@@ -296,7 +296,7 @@ Try {
 
     # Make sure we are in repo
     if (-not (Test-Path -PathType Leaf -Path ".\Dockerfile.windows")) {
-        Throw "$(pwd) does not container Dockerfile.Windows!"
+        Throw "$(pwd) does not contain Dockerfile.windows!"
     }
     Write-Host  -ForegroundColor Green "INFO: docker/docker repository was found"
 
@@ -431,14 +431,16 @@ Try {
     Write-Host -ForegroundColor Green "INFO: Location for testing is $env:TEMP"
 
     # CI Integrity check - ensure Dockerfile.windows and Dockerfile go versions match
-    $goVersionDockerfileWindows=$(Get-Content ".\Dockerfile.windows" | Select-String "ENV GO_VERSION").ToString().Replace("ENV GO_VERSION=","").Replace("\","").Replace("``","").Trim()
-    $goVersionDockerfile=$(Get-Content ".\Dockerfile" | Select-String "ENV GO_VERSION")
+    $goVersionDockerfileWindows=$(Get-Content ".\Dockerfile.windows" | Select-String "^ENV GO_VERSION").ToString().Replace("ENV GO_VERSION=","").Replace("\","").Replace("``","").Trim()
+    $goVersionDockerfile=$(Get-Content ".\Dockerfile" | Select-String "^ENV GO_VERSION")
     
-    # As of go 1.11, Dockerfile changed to be in the format `FROM golang:1.11 AS base"
+    # As of go 1.11, Dockerfile changed to be in the format like "FROM golang:1.11.0 AS base".
+    # If a version number ends with .0 (as in 1.11.0, a convention used in golang docker
+    # image versions), it needs to be removed (i.e. "1.11.0" becomes "1.11").
     if ($goVersionDockerfile -eq $Null) {
-        $goVersionDockerfile=$(Get-Content ".\Dockerfile" | Select-String "FROM golang:")
+        $goVersionDockerfile=$(Get-Content ".\Dockerfile" | Select-String "^FROM golang:")
         if ($goVersionDockerfile -ne $Null) {
-            $goVersionDockerfile = $goVersionDockerfile.ToString().Split(" ")[1].Split(":")[1]
+            $goVersionDockerfile = $goVersionDockerfile.ToString().Split(" ")[1].Split(":")[1] -replace '\.0$',''
         }
     } else {
         $goVersionDockerfile = $goVersionDockerfile.ToString().Split(" ")[2]
