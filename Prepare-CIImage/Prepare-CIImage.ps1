@@ -53,6 +53,9 @@
 
 .Parameter IgnoreMissingImages
    Don't error out if images are missing
+
+.Parameter Client
+   Start from the client SKU
    
 #>
 
@@ -70,7 +73,8 @@ param(
     [Parameter(Mandatory=$false)][int]$RedstoneRelease,
     [Parameter(Mandatory=$false)][int]   $AzureImageVersion,
     [Parameter(Mandatory=$false)][string]$AzurePassword,
-	[Parameter(Mandatory=$false)][string]$IgnoreMissingImages
+	[Parameter(Mandatory=$false)][string]$IgnoreMissingImages,
+	[Parameter(Mandatory=$false)][string]$Client
 
 )
 
@@ -141,10 +145,13 @@ Try {
     Write-Host -ForegroundColor Cyan "INFO: Starting at $(date)`n"
     set-PSDebug -Trace 0  # 1 to turn on
 
+
     if (-not (Test-IsAdmin)) {
         Throw("This must be run elevated")
     }
 
+	$isClient = $($Client -ne "")
+	
     # Split the path into it's parts
     #\\winbuilds\release\RS_ONECORE_CONTAINER_HYP\15140.1001.170220-1700
     # $branch    --> RS_ONECORE_CONTAINER_HYP
@@ -168,18 +175,26 @@ Try {
     Write-Host "INFO: Timestamp is $timestamp"
     
     # Verify the VHD exists. Try VL first
-    $vhdFilename="$build"+".amd64fre."+$branch+".$timestamp"+"_server_ServerDataCenter_en-us_vl.vhd"
-    $vhdSource="\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\vhd\vhd_server_serverdatacenter_en-us_vl\$vhdFilename"
+	
+	$sku = "server_serverdatacenter"
+	if ($isClient) {
+	    $sku = "client_enterprise"
+	}
+	
+
+    $vhdFilename="$build"+".amd64fre."+$branch+".$timestamp"+"_"+$sku+"_en-us_vl.vhd"
+    $vhdSource="\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\vhd\vhd_"+$sku+"_en-us_vl\$vhdFilename"
     
     if (-not (Test-Path $vhdSource)) { 
-	    $vhdFilename="$build"+".amd64fre."+$branch+".$timestamp"+"_server_ServerDataCenter_en-us.vhd"
-		$vhdSource="\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\vhd\vhd_server_serverdatacenter_en-us\$vhdFilename"
+	    $vhdFilename="$build"+".amd64fre."+$branch+".$timestamp"+"_"+$sku+"_en-us.vhd"
+		$vhdSource="\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\vhd\vhd_"+$sku+"_en-us\$vhdFilename"
 		if (-not (Test-Path $vhdSource)) { Throw "$vhdSource could not be found" }
 		Write-Host "INFO: Using non-VL VHD"
 	}
-	
-    Write-Host "INFO: VHD found"
-    
+
+    Write-Host "INFO: VHD found $vhdFilename"
+
+ 
     # Verify the container images exist
     $wscImageLocation="\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\ContainerBaseOsPkgs\cbaseospkg_serverdatacentercore_en-us\CBaseOs_$branch"+"_$build"+".$timestamp"+"_amd64fre_ServerDatacenterCore_en-us.tar.gz"
     if (-not (Test-Path $wscImageLocation)) {
@@ -211,7 +226,7 @@ Try {
     if (-not (Test-Path $target)) { Throw "$target could not be found" }
 
     # Create a sub-directory under the target. OK if it already exists.
-    $targetSubdir = Join-Path $Target -ChildPath ("$branch $build"+".$timestamp")
+    $targetSubdir = Join-Path $Target -ChildPath ("$branch $build"+".$timestamp $sku")
     
     # Copy the VHD to the target sub directory
     if ($SkipCopyVHD) { 

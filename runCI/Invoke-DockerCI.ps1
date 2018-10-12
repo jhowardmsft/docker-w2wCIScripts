@@ -656,7 +656,7 @@ Try {
 
     # Turn off defender to make things run significantly faster
     Write-Host -ForegroundColor green "INFO: Disabling Windows Defender for performance..."
-    set-mppreference -disablerealtimemonitoring $true -ErrorAction Stop
+    set-mppreference -disablerealtimemonitoring $true -ErrorAction Continue
 
     # Stop the docker service if running.
     Stop-DockerService

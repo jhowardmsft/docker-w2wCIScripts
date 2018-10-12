@@ -85,7 +85,7 @@ Try {
 
 
     # We need some credentials and the dev box to connect to. 
-    $defaultValue = '\\jhoward-z420\e$'
+    $defaultValue = '\\jhoward-p520\e$'
     $devMachine = Read-Host "Enter dev machine share [$($defaultValue)]"
     $devMachine= ($defaultValue,$devMachine)[[bool]$devMachine]
 
