@@ -202,7 +202,8 @@ Try {
         Write-Host "INFO: Creating c:\liteide"
         mkdir c:\liteide -ErrorAction SilentlyContinue
         Write-Host "INFO: Copying liteide..."
-        xcopy \\sesdfs.corp.microsoft.com\osg\Teams\CORE\BASE\HYP\Team\jhoward\Docker\Install\liteide\liteidex30.2.windows-qt4\liteide\* c:\liteide /s /Y
+		
+        xcopy \\sesdfs.corp.microsoft.com\osg\Teams\CORE\BASE\HYP\Team\jhoward\Docker\Install\liteidex35.3.windows-qt5.9.5\liteide\* c:\liteide /s /Y
         if (-not ($env:PATH -like '*c:\liteide\bin*'))   { $env:Path = "c:\liteide\bin;$env:Path" }
         setx "PATH" "$env:PATH" /M
     }
