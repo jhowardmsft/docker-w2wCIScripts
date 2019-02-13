@@ -89,12 +89,6 @@
     The location of the git installer binary. Can be an http: path, or a
     file path (local or UNC). 
 
-.PARAMETER CIScriptLocation
-    The location of the bash CI script to actually do the CI work. This
-    is a temporary parameter and will eventually be redundant once the
-    Jenkins script is in the docker sources. Can be an http: path, or a
-    file path (local or UNC).
-
 .PARAMETER DUTDebugMode
     Whether to run the daemon under test in debug mode. Default is false.
 
@@ -179,7 +173,6 @@ param(
     [Parameter(Mandatory=$false)][switch]$DestroyCache=$False,
     [Parameter(Mandatory=$false)][string]$DockerBasePath = $DOCKER_DEFAULT_BASEPATH,
     [Parameter(Mandatory=$false)][string]$GitLocation = $GIT_DEFAULT_LOCATION,
-    [Parameter(Mandatory=$false)][string]$CIScriptLocation = $CISCRIPT_DEFAULT_LOCATION,
     [Parameter(Mandatory=$false)][switch]$DUTDebugMode=$False,
     [Parameter(Mandatory=$false)][switch]$ControlDebugMode=$False,
     [Parameter(Mandatory=$false)][switch]$SkipValidationTests=$False,
@@ -207,7 +200,6 @@ $FinallyColour="Cyan"
 $DOCKER_DEFAULT_BASEPATH="https://master.dockerproject.org/windows/x86_64"
 $GIT_DEFAULT_LOCATION="https://github.com/git-for-windows/git/releases/download/v2.18.0.windows.1/Git-2.18.0-64-bit.exe"
 $ConfigJSONBackedUp=$False
-$CISCRIPT_DEFAULT_LOCATION = "https://raw.githubusercontent.com/jhowardmsft/docker-w2wCIScripts/master/runCI/executeCI.ps1"
 $HCS_TRACE_PROFILE = "https://gist.githubusercontent.com/jhowardmsft/71b37956df0b4248087c3849b97d8a71/raw/72e14a6d2e86d3ccdefea5766d09d6a9fc053f25/HcsTraceProfile.wprp"
 $pushed=$False  # To restore the directory if we have temporarily pushed to one.
 
@@ -407,7 +399,7 @@ Function Get-Sources
     
         # Useful to show the last couple of commits in the overall log
         Write-Host "`r`n"
-        git log -2
+        git --no-pager log -2
         Write-Host "`r`n"
     }
     catch {
@@ -575,9 +567,6 @@ Try {
     if ([string]::IsNullOrWhiteSpace($GitLocation)) {
         $GitLocation = $GIT_DEFAULT_LOCATION
     }
-    if ([string]::IsNullOrWhiteSpace($CIScriptLocation)) {
-        $CIScriptLocation = $CISCRIPT_DEFAULT_LOCATION
-    }
 
     # Where we run the control daemon from
     $ControlRoot="$($TestrunDrive):\control"
@@ -612,7 +601,6 @@ Try {
     Write-Host  -ForegroundColor yellow "Miscellaneous"
     Write-Host " - Destroy Cache:     $DestroyCache"
     Write-Host " - Control binaries:  $DockerBasePath"
-    Write-Host " - CI Script:         $CIScriptLocation"
     Write-Host " - Skip binary build: $SkipBinaryBuild"
     Write-Host " - Skip zap DUT dir:  $SkipZapDUT"
     Write-Host " - Skip image build:  $SkipImageBuild"
@@ -655,8 +643,8 @@ Try {
     $env:GOPATH="$WorkspaceRoot"
 
     # Turn off defender to make things run significantly faster
-    Write-Host -ForegroundColor green "INFO: Disabling Windows Defender for performance..."
-    set-mppreference -disablerealtimemonitoring $true -ErrorAction Continue
+    #Write-Host -ForegroundColor green "INFO: Disabling Windows Defender for performance..."
+    #set-mppreference -disablerealtimemonitoring $true -ErrorAction Continue
 
     # Stop the docker service if running.
     Stop-DockerService
@@ -765,11 +753,6 @@ Try {
     New-Item "$ControlRoot\daemon" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
     New-Item "$ControlRoot\graph" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
  
-    # Download the CI script
-    Write-Host -ForegroundColor green "INFO: CI script $CIScriptLocation"
-    if (Test-Path "$ControlRoot\CIScript.ps1") { Remove-Item "$ControlRoot\CIScript.ps1" }
-    $r=Download-File "$CIScriptLocation" "" "$ControlRoot\CIScript.ps1"
-
     # Update GOPATH now everything is installed
     $env:GOPATH="$WorkspaceRoot\src\github.com\docker\docker\vendor;$WorkspaceRoot"
    
@@ -824,11 +807,11 @@ Try {
     }
 
     # Invoke the CI script itself.
-    Write-Host -ForegroundColor cyan "INFO: Starting $TestrunDrive`:\control\CIScript.ps1"
-    Try { & "$TestrunDrive`:\control\CIScript.ps1" }
+    Write-Host -ForegroundColor cyan "INFO: Starting $Workspace\hack\ci\windows.ps1"
+    Try { & "$Workspace\hack\ci\windows.ps1" }
     Catch [Exception] { Throw "CI script failed, so quitting Invoke-DockerCI with error $_" }
 
-    Write-Host -ForegroundColor green "INFO: $TestrunDrive`:\control\CIScript.ps1 succeeded!!!"
+    Write-Host -ForegroundColor green "INFO: $Workspace\hack\ci\windows.ps1 succeeded!!!"
 }
 Catch [Exception] {
     Write-Host -ForegroundColor Red "`n---------------------------------------------------------------------------"
