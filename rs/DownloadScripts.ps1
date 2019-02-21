@@ -74,7 +74,7 @@ try {
     echo "$(date) DownloadScripts.ps1 Doing downloads..." >> $env:SystemDrive\packer\configure.log
         
     # Downloads scripts for performing local runs.
-    Copy-File -SourcePath "https://raw.githubusercontent.com/jhowardmsft/docker-w2wCIScripts/master/runCI/executeCI.ps1" -DestinationPath "$env:SystemDrive\scripts\executeCI.ps1"
+    #Copy-File -SourcePath "https://raw.githubusercontent.com/jhowardmsft/docker-w2wCIScripts/master/runCI/executeCI.ps1" -DestinationPath "$env:SystemDrive\scripts\executeCI.ps1"
     Copy-File -SourcePath "https://raw.githubusercontent.com/jhowardmsft/docker-w2wCIScripts/master/runCI/Invoke-DockerCI.ps1" -DestinationPath "$env:SystemDrive\scripts\Invoke-DockerCI.ps1"
     Copy-File -SourcePath "https://raw.githubusercontent.com/jhowardmsft/docker-w2wCIScripts/master/runCI/RunOnCIServer.cmd" -DestinationPath "$env:SystemDrive\scripts\RunOnCIServer.cmd"
 
