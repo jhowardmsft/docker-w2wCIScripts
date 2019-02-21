@@ -220,7 +220,7 @@ Try {
 		Write-Host "INFO: nanoserver base image found"
 	}
 
-	$latestGCS = $(gci \\redmond\wsscfs\OSTC-Public\Builds\*master* | where { $_.PSIsContainer } | sort CreationTime -Descending | select -First 1)
+	$lkg = "\\sesdfs\1Windows\TestContent\CORE\Base\HYP\LOW\cri"
 	
     # Make sure the target location exists
     if (-not (Test-Path $target)) { Throw "$target could not be found" }
@@ -287,7 +287,9 @@ Try {
     if (-not (Test-Path "$driveLetter`:\privates"))   {New-Item -ItemType Directory "$driveLetter`:\privates" | Out-Null}
     if (-not (Test-Path "$driveLetter`:\baseimages")) {New-Item -ItemType Directory "$driveLetter`:\baseimages" | Out-Null}
     if (-not (Test-Path "$driveLetter`:\w2w"))        {New-Item -ItemType Directory "$driveLetter`:\w2w" | Out-Null}
-    if (-not (Test-Path "$driveLetter`:\lcow"))        {New-Item -ItemType Directory "$driveLetter`:\lcow" | Out-Null}
+    if (-not (Test-Path "$driveLetter`:\tvpp"))       {New-Item -ItemType Directory "$driveLetter`:\tvpp" | Out-Null}
+    if (-not (Test-Path "$driveLetter`:\debuggers"))  {New-Item -ItemType Directory "$driveLetter`:\debuggers" | Out-Null}	
+	if (-not (Test-Path "$driveLetter`:\lkg"))        {New-Item -ItemType Directory "$driveLetter`:\lkg" | Out-Null}	
 
     # The entire repo of w2w (we need this for a dev-vm scenario - bootstrap.ps1 makes that decision
     Copy-Item ..\* "$driveletter`:\w2w" -Recurse -Force
@@ -299,11 +301,16 @@ Try {
     Copy-Item "\\sesdfs\1windows\TestContent\CORE\Base\HYP\HAT\setup\testroot-sha2.cer" "$driveLetter`:\privates\"
     Copy-Item ("\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\test_automation_bins\idw\sfpcopy.exe") "$driveLetter`:\privates\"
 
-    # Files for Linux containers
-    Copy-Item $latestGCS\bootx64.efi "$driveletter`:\lcow\"
-    Copy-Item $latestGCS\initrd.img "$driveletter`:\lcow\"
-    echo $latestGCS >  "$driveletter`:\lcow\gcs.version"
-
+	# Binaries
+	Expand-Archive \\sesdfs\1Windows\TestContent\CORE\Base\HYP\LOW\cri\package\lkg\package.zip "$driveletter`:\lkg\" -Force
+	
+	# Traceview++ https://osgwiki.com/wiki/TraceLogging_Ramp_Up_Guide#TraceView.2B.2B
+	\\tkfiltoolbox\tools\tvpp\3.0\xcopyinstall.cmd "$driveletter`:\tvpp"
+	Copy-Item "\\sesdfs.corp.microsoft.com\osg\Teams\CORE\Base\HYP\Team\jhoward\Docker\Install\tvpp\TVPPSession.tvpp" "$driveletter`:\tvpp\"
+	
+	# Debuggers
+	\\dbg\privates\latest\dbgxcopyinstall.cmd "$driveletter`:\debuggers"
+	
     # We need NuGet
     Write-Host "INFO: Installing NuGet package provider..."
     Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
