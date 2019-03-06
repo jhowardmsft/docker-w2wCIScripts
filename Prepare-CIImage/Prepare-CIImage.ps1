@@ -305,7 +305,7 @@ Try {
 	Expand-Archive \\sesdfs\1Windows\TestContent\CORE\Base\HYP\LOW\cri\package\lkg\package.zip "$driveletter`:\lkg\" -Force
 	
 	# Traceview++ https://osgwiki.com/wiki/TraceLogging_Ramp_Up_Guide#TraceView.2B.2B
-	\\tkfiltoolbox\tools\tvpp\3.0\xcopyinstall.cmd "$driveletter`:\tvpp"
+	\\tkfiltoolbox\tools\tvpp\3.1\xcopyinstall.cmd "$driveletter`:\tvpp" -s
 	Copy-Item "\\sesdfs.corp.microsoft.com\osg\Teams\CORE\Base\HYP\Team\jhoward\Docker\Install\tvpp\TVPPSession.tvpp" "$driveletter`:\tvpp\"
 	
 	# Debuggers
