@@ -127,7 +127,9 @@ try {
 
         echo "$(date) Phase1.ps1 Removing pagefile from D:..." >> $env:SystemDrive\packer\configure.log    
         $pagefile = Get-WmiObject -Query "Select * From Win32_PageFileSetting Where Name='d:\\pagefile.sys'"
-        $pagefile.Delete()
+        if ($pagefile -ne $null) {
+            $pagefile.Delete()
+        }
 
         echo "$(date) Phase1.ps1 Directing pagefile.sys to C:..." >> $env:SystemDrive\packer\configure.log    
         Set-WMIInstance -class Win32_PageFileSetting -Arguments @{name="c:\pagefile.sys";InitialSize = 15000;MaximumSize = 15000}
