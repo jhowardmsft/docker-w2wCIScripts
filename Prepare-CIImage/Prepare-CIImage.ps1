@@ -220,8 +220,6 @@ Try {
 		Write-Host "INFO: nanoserver base image found"
 	}
 
-	$lkg = "\\sesdfs\1Windows\TestContent\CORE\Base\HYP\LOW\cri"
-	
     # Make sure the target location exists
     if (-not (Test-Path $target)) { Throw "$target could not be found" }
 
@@ -302,7 +300,7 @@ Try {
     Copy-Item ("\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\test_automation_bins\idw\sfpcopy.exe") "$driveLetter`:\privates\"
 
 	# Binaries
-	Expand-Archive \\sesdfs\1Windows\TestContent\CORE\Base\HYP\LOW\cri\package\lkg\package.zip "$driveletter`:\lkg\" -Force
+	Expand-Archive \\sesdfs\1Windows\TestContent\CORE\Base\HYP\LOW\containerplat-sfmesh\lkg\package.zip "$driveletter`:\lkg\" -Force
 	
 	# Traceview++ https://osgwiki.com/wiki/TraceLogging_Ramp_Up_Guide#TraceView.2B.2B
 	\\tkfiltoolbox\tools\tvpp\3.1\xcopyinstall.cmd "$driveletter`:\tvpp" -s
