@@ -144,7 +144,7 @@ RUN ls -l'
     Do-Pull "mysql"
     Do-Pull "swarm"
     Do-Pull "hello-world"
-    Do-Pull "elasticsearch"
+ #   Do-Pull "elasticsearch"
     Do-Pull "postgres"
     Do-Pull "node"
     Do-Pull "httpd"
