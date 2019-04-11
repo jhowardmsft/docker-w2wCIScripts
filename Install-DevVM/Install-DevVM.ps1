@@ -161,7 +161,9 @@ Try {
             $ErrorActionPreference = 'Stop'
             if (-not (Test-Path $env:Temp\vscodeinstaller.exe)) {
                 Write-Host "INFO: Downloading VSCode installer"
-                Copy-File -SourcePath "https://go.microsoft.com/fwlink/?LinkID=623230" -DestinationPath "$env:Temp\vscodeinstaller.exe"
+                # Fix for 4B2019 RS1. Copy-File throwing errors.
+                #Copy-File -SourcePath "https://go.microsoft.com/fwlink/?LinkID=623230" -DestinationPath "$env:Temp\vscodeinstaller.exe"
+                Start-BitsTransfer -Source "https://go.microsoft.com/fwlink/?LinkID=623230" -Destination "$env:Temp\vscodeinstaller.exe"
             }
             Write-Host "INFO: Installing VSCode"
             $j = Start-Job -ScriptBlock {Start-Process -wait "$env:Temp\vscodeinstaller.exe" -ArgumentList "/silent /dir:c:\vscode"}
