@@ -303,8 +303,15 @@ Try {
 	Expand-Archive \\sesdfs\1Windows\TestContent\CORE\Base\HYP\LOW\containerplat-sfmesh\lkg\package.zip "$driveletter`:\lkg\" -Force
 	
 	# Traceview++ https://osgwiki.com/wiki/TraceLogging_Ramp_Up_Guide#TraceView.2B.2B
-	\\tkfiltoolbox\tools\tvpp\3.1\xcopyinstall.cmd "$driveletter`:\tvpp" -s
+    $osv = $(gin).OsVersion.Split(".")[2]
+    if ($osv -eq 14393) {
+        \\tkfiltoolbox\tools\tvpp\3.0\xcopyinstall.cmd "$driveletter`:\tvpp"
+	} else {
+        \\tkfiltoolbox\tools\tvpp\3.1\xcopyinstall.cmd "$driveletter`:\tvpp" -s
+    }
 	Copy-Item "\\sesdfs.corp.microsoft.com\osg\Teams\CORE\Base\HYP\Team\jhoward\Docker\Install\tvpp\TVPPSession.tvpp" "$driveletter`:\tvpp\"
+    cmd /c assoc .tvpp=tvppfile
+    cmd /c ftype tvppfile="c:\tvpp\tvpp.exe" "%1"
 	
 	# Debuggers
 	\\dbg\privates\latest\dbgxcopyinstall.cmd "$driveletter`:\debuggers"
