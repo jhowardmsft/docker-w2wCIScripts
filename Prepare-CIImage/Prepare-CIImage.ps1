@@ -309,7 +309,7 @@ Try {
 	} else {
         \\tkfiltoolbox\tools\tvpp\3.1\xcopyinstall.cmd "$driveletter`:\tvpp" -s
     }
-	Copy-Item "\\sesdfs.corp.microsoft.com\osg\Teams\CORE\Base\HYP\Team\jhoward\Docker\Install\tvpp\TVPPSession.tvpp" "$driveletter`:\tvpp\"
+	Copy-Item "\\jhoward-p520\devvm\TVPPSession.tvpp" "$driveletter`:\tvpp\"
     cmd /c assoc .tvpp=tvppfile
     cmd /c ftype tvppfile="c:\tvpp\tvpp.exe" "%1"
 	
