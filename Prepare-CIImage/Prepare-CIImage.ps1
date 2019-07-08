@@ -56,7 +56,7 @@
 
 .Parameter Client
    Start from the client SKU
-   
+
 #>
 
 
@@ -73,8 +73,8 @@ param(
     [Parameter(Mandatory=$false)][int]$RedstoneRelease,
     [Parameter(Mandatory=$false)][int]   $AzureImageVersion,
     [Parameter(Mandatory=$false)][string]$AzurePassword,
-	[Parameter(Mandatory=$false)][string]$IgnoreMissingImages,
-	[Parameter(Mandatory=$false)][string]$Client
+    [Parameter(Mandatory=$false)][string]$IgnoreMissingImages,
+    [Parameter(Mandatory=$false)][string]$Client
 
 )
 
@@ -98,12 +98,12 @@ $targetSize = 127GB
 #$AzureImageVersion=31
 
 Function Test-IsAdmin () {
-    [Security.Principal.WindowsPrincipal] $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()            
-    $Identity.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)  
+    [Security.Principal.WindowsPrincipal] $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $Identity.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
 # Download-File is a simple wrapper to get a file from somewhere (HTTP, SMB or local file path)
-# If file is supplied, the source is assumed to be a base path. Returns -1 if does not exist, 
+# If file is supplied, the source is assumed to be a base path. Returns -1 if does not exist,
 # 0 if success. Throws error on other errors.
 Function Download-File([string] $source, [string] $file, [string] $target) {
     $ErrorActionPreference = 'SilentlyContinue'
@@ -116,7 +116,7 @@ Function Download-File([string] $source, [string] $file, [string] $target) {
         try {
             Write-Host -ForegroundColor green "INFO: Downloading $source..."
             $wc.Downloadfile($source, $target)
-        } 
+        }
         catch [System.Net.WebException]
         {
             $statusCode = [int]$_.Exception.Response.StatusCode
@@ -139,6 +139,101 @@ Function Download-File([string] $source, [string] $file, [string] $target) {
     return 0
 }
 
+# Determines the path to a layer tar given the image type.
+function Get-LayerFilePath(
+    [ValidateSet("ClientEnterprise", "NanoServer", "ServerCore-LTSC", "ServerCore-SAC", "WindowsServerCore")]
+    [string] $Type,
+
+    [ValidateNotNullOrEmpty()]
+    [ValidatePattern("\d+\.\d+\.\w+\.\w+\.\d{6}-\d{4}(-\d+)?")]
+    [string] $BuildName = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").BuildLabEx,
+
+    [string] $Language = "en-us")
+{
+    $ErrorActionPreference = "Stop"
+
+    # Parse $BuildName.
+    $buildNameTokens = $BuildName.Split(".")
+
+    $buildVersion = $buildNameTokens[0]
+    $buildQfe = $buildNameTokens[1]
+    $buildFlavor = $buildNameTokens[2]
+    $buildBranch = $buildNameTokens[3]
+    $buildTimestamp = $buildNameTokens[4]
+
+    $threePartBuildName = "$buildVersion.$buildQfe.$buildTimestamp"
+
+    $mediaName = $Type
+
+    # Handle older Server Core media names.
+    if ($buildVersion -le 18362)
+    {
+        if ($buildVersion -eq 14393 -or $buildVersion -eq 17763) # RS1 and RS5 were LTSC releases.
+        {
+            if ($mediaName -eq "ServerCore-LTSC")
+            {
+                $mediaName = "WindowsServerCore"
+            }
+        }
+        else
+        {
+            if ($mediaName -eq "ServerCore-SAC")
+            {
+                $mediaName = "WindowsServerCore"
+            }
+        }
+    }
+    else
+    {
+        if ($mediaName -eq "WindowsServerCore")
+        {
+            $mediaName = "ServerCore-SAC"
+        }
+    }
+
+    # Handle cases where repository nomenclature doesn't match build artifact nomenclature.
+    switch ($mediaName)
+    {
+        "ServerCore-LTSC"
+        {
+            $mediaName = "ServerDatacenterCore_ltsc"
+            $volume = "_vl"
+        }
+        "ServerCore-SAC"
+        {
+            $mediaName = "ServerDatacenterACore_sac"
+            $volume = "_vl"
+        }
+        "WindowsServerCore"
+        {
+            $mediaName = "ServerDatacenterCore"
+            $volume = ""
+        }
+        default
+        {
+            $volume = ""
+        }
+    }
+
+    # Construct the layer file path.
+    $layerFilePath = "\\winbuilds\release\$($buildBranch)\$($threePartBuildName)\amd64fre\ContainerBaseOsPkgs\" +
+        "CBaseOsPkg_$($mediaName)_en-us$($volume)\" +
+        "CBaseOs_$($buildBranch)_$($threePartBuildName)_amd64fre_$($mediaName)_$($Language)$($volume).tar.gz"
+
+    if ($buildVersion -gt 18362 -and @("ServerDatacenterCore_ltsc", "ServerDatacenterACore_sac") -contains $mediaName)
+    {
+        $oldLayerFilePath = "\\winbuilds\release\$($buildBranch)\$($threePartBuildName)\amd64fre\ContainerBaseOsPkgs\" +
+        "CBaseOsPkg_ServerDatacenterCore_en-us\" +
+        "CBaseOs_$($buildBranch)_$($threePartBuildName)_amd64fre_ServerDatacenterCore_$($Language).tar.gz"
+
+        if (Test-Path $oldLayerFilePath)
+        {
+            return $oldLayerFilePath
+        }
+    }
+
+    return $layerFilePath
+}
 
 # Start of the main script. In a try block to catch any exception
 Try {
@@ -150,8 +245,8 @@ Try {
         Throw("This must be run elevated")
     }
 
-	$isClient = $($Client -ne "")
-	
+    $isClient = $($Client -ne "")
+
     # Split the path into it's parts
     #\\winbuilds\release\RS_ONECORE_CONTAINER_HYP\15140.1001.170220-1700
     # $branch    --> RS_ONECORE_CONTAINER_HYP
@@ -163,9 +258,9 @@ Try {
     }
     $branch=$parts[4]
     Write-Host "INFO: Branch is $branch"
-    
+
     $parts=$parts[5].Split(".")
-    
+
     if ($parts.Length -ne 3) {
         Throw ("Path appears to be invalid. Should be something like \\winbuilds\release\RS_ONECORE_CONTAINER_HYP\15140.1001.170220-1700. Could not parse build ID")
     }
@@ -173,61 +268,59 @@ Try {
     $timestamp = $parts[2]
     Write-Host "INFO: Build is $build"
     Write-Host "INFO: Timestamp is $timestamp"
-    
+
     # Verify the VHD exists. Try VL first
-	
-	$sku = "server_serverdatacenter"
-	if ($isClient) {
-	    $sku = "client_enterprise"
-	}
-	
+
+    $sku = "server_serverdatacenter"
+    if ($isClient) {
+        $sku = "client_enterprise"
+    }
 
     $vhdFilename="$build"+".amd64fre."+$branch+".$timestamp"+"_"+$sku+"_en-us_vl.vhd"
     $vhdSource="\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\vhd\vhd_"+$sku+"_en-us_vl\$vhdFilename"
-    
-    if (-not (Test-Path $vhdSource)) { 
-	    $vhdFilename="$build"+".amd64fre."+$branch+".$timestamp"+"_"+$sku+"_en-us.vhd"
-		$vhdSource="\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\vhd\vhd_"+$sku+"_en-us\$vhdFilename"
-		if (-not (Test-Path $vhdSource)) { Throw "$vhdSource could not be found" }
-		Write-Host "INFO: Using non-VL VHD"
-	}
+
+    if (-not (Test-Path $vhdSource)) {
+        $vhdFilename="$build"+".amd64fre."+$branch+".$timestamp"+"_"+$sku+"_en-us.vhd"
+        $vhdSource="\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\vhd\vhd_"+$sku+"_en-us\$vhdFilename"
+        if (-not (Test-Path $vhdSource)) { Throw "$vhdSource could not be found" }
+        Write-Host "INFO: Using non-VL VHD"
+    }
 
     Write-Host "INFO: VHD found $vhdFilename"
 
- 
     # Verify the container images exist
-    $wscImageLocation="\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\ContainerBaseOsPkgs\cbaseospkg_serverdatacentercore_en-us\CBaseOs_$branch"+"_$build"+".$timestamp"+"_amd64fre_ServerDatacenterCore_en-us.tar.gz"
+    $wscImageLocation = Get-LayerFilePath "WindowsServerCore" "$($build).amd64fre.$($branch).$($timestamp)" "en-us"
     if (-not (Test-Path $wscImageLocation)) {
-		if ($IgnoreMissingImages -eq "Yes") {
-			$wscImageLocation=""
-			Write-Host "WARN: windowsservercore image is missing"
-		} else {
-			Throw "$wscImageLocation could not be found"
-		}
-	} else {
-		Write-Host "INFO: windowsservercore base image found"
-	}
+        if ($IgnoreMissingImages -eq "Yes") {
+            $wscImageLocation=""
+            Write-Host "WARN: windowsservercore image is missing"
+        } else {
+            Throw "$wscImageLocation could not be found"
+        }
+    } else {
+        Write-Host "INFO: windowsservercore base image found $(Split-Path -Leaf $wscImageLocation)"
+    }
 
-    $nanoImageLocation="\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\ContainerBaseOsPkgs\cbaseospkg_nanoserver_en-us\CBaseOs_$branch"+"_$build"+".$timestamp"+"_amd64fre_NanoServer_en-us.tar.gz"
+    $nanoImageLocation = Get-LayerFilePath "NanoServer" "$($build).amd64fre.$($branch).$($timestamp)" "en-us"
     if (-not (Test-Path $nanoImageLocation)) {
-		if ($IgnoreMissingImages -eq "Yes") {
-			$nanoImageLocation = ""
-			Write-Host "WARN: nanoserver image is missing"
-		} else { 
-			Throw "$nanoImageLocation could not be found"
-		}
-	} else {
-		Write-Host "INFO: nanoserver base image found"
-	}
+        if ($IgnoreMissingImages -eq "Yes") {
+            $nanoImageLocation = ""
+            Write-Host "WARN: nanoserver image is missing"
+        } else {
+            Throw "$nanoImageLocation could not be found"
+        }
+    } else {
+        Write-Host "INFO: nanoserver base image found $(Split-Path -Leaf $nanoImageLocation)"
+    }
 
     # Make sure the target location exists
     if (-not (Test-Path $target)) { Throw "$target could not be found" }
 
     # Create a sub-directory under the target. OK if it already exists.
     $targetSubdir = Join-Path $Target -ChildPath ("$branch $build"+".$timestamp $sku")
-    
+
     # Copy the VHD to the target sub directory
-    if ($SkipCopyVHD) { 
+    if ($SkipCopyVHD) {
         Write-Host "INFO: Skipping copying the VHD"
     } else {
         # Stop the VM if it is running and we're re-creating it, otherwise the VHD is locked
@@ -278,7 +371,7 @@ Try {
     if ($partition.size -lt $maxSize) {
         Write-Host "INFO: Resizing partition to maximum"
         Resize-Partition -DriveLetter $driveLetter -Size $maxSize
-    } 
+    }
 
     # Create some directories
     if (-not (Test-Path "$driveLetter`:\packer"))     {New-Item -ItemType Directory "$driveLetter`:\packer" | Out-Null}
@@ -286,8 +379,8 @@ Try {
     if (-not (Test-Path "$driveLetter`:\baseimages")) {New-Item -ItemType Directory "$driveLetter`:\baseimages" | Out-Null}
     if (-not (Test-Path "$driveLetter`:\w2w"))        {New-Item -ItemType Directory "$driveLetter`:\w2w" | Out-Null}
     if (-not (Test-Path "$driveLetter`:\tvpp"))       {New-Item -ItemType Directory "$driveLetter`:\tvpp" | Out-Null}
-    if (-not (Test-Path "$driveLetter`:\debuggers"))  {New-Item -ItemType Directory "$driveLetter`:\debuggers" | Out-Null}	
-	if (-not (Test-Path "$driveLetter`:\lkg"))        {New-Item -ItemType Directory "$driveLetter`:\lkg" | Out-Null}	
+    if (-not (Test-Path "$driveLetter`:\debuggers"))  {New-Item -ItemType Directory "$driveLetter`:\debuggers" | Out-Null}
+    if (-not (Test-Path "$driveLetter`:\lkg"))        {New-Item -ItemType Directory "$driveLetter`:\lkg" | Out-Null}
 
     # The entire repo of w2w (we need this for a dev-vm scenario - bootstrap.ps1 makes that decision
     Copy-Item ..\* "$driveletter`:\w2w" -Recurse -Force
@@ -299,23 +392,23 @@ Try {
     Copy-Item "\\sesdfs\1windows\TestContent\CORE\Base\HYP\HAT\setup\testroot-sha2.cer" "$driveLetter`:\privates\"
     Copy-Item ("\\winbuilds\release\$branch\$build"+".$timestamp\amd64fre\test_automation_bins\idw\sfpcopy.exe") "$driveLetter`:\privates\"
 
-	# Binaries
-	Expand-Archive \\sesdfs\1Windows\TestContent\CORE\Base\HYP\LOW\containerplat-sfmesh\lkg\package.zip "$driveletter`:\lkg\" -Force
-	
-	# Traceview++ https://osgwiki.com/wiki/TraceLogging_Ramp_Up_Guide#TraceView.2B.2B
+    # Binaries
+    Expand-Archive \\sesdfs\1Windows\TestContent\CORE\Base\HYP\LOW\containerplat-sfmesh\lkg\package.zip "$driveletter`:\lkg\" -Force
+
+    # Traceview++ https://osgwiki.com/wiki/TraceLogging_Ramp_Up_Guide#TraceView.2B.2B
     $osv = $(gin).OsVersion.Split(".")[2]
     if ($osv -eq 14393) {
         \\tkfiltoolbox\tools\tvpp\3.0\xcopyinstall.cmd "$driveletter`:\tvpp"
-	} else {
+    } else {
         \\tkfiltoolbox\tools\tvpp\3.1\xcopyinstall.cmd "$driveletter`:\tvpp" -s
     }
-	Copy-Item "\\jhoward-p520\devvm\TVPPSession.tvpp" "$driveletter`:\tvpp\"
+    Copy-Item "\\jhoward-p520\devvm\TVPPSession.tvpp" "$driveletter`:\tvpp\"
     cmd /c assoc .tvpp=tvppfile
     cmd /c ftype tvppfile="c:\tvpp\tvpp.exe" "%1"
-	
-	# Debuggers
-	\\dbg\privates\latest\dbgxcopyinstall.cmd "$driveletter`:\debuggers"
-	
+
+    # Debuggers
+    \\dbg\privates\latest\dbgxcopyinstall.cmd "$driveletter`:\debuggers"
+
     # We need NuGet
     Write-Host "INFO: Installing NuGet package provider..."
     Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
@@ -330,16 +423,16 @@ Try {
         Import-Module Containers.Layers | Out-Null
 
         if (-not (Test-Path "$driveLetter`:\BaseImages\nanoserver.tar")) {
-			if (-not ($nanoImageLocation -eq "")) {
-				Write-Host "INFO: Converting nanoserver base image"
-				Export-ContainerLayer -SourceFilePath $nanoImageLocation -DestinationFilePath "$driveLetter`:\BaseImages\nanoserver.tar" -Repository "microsoft/nanoserver" -latest
-			}
+            if (-not ($nanoImageLocation -eq "")) {
+                Write-Host "INFO: Converting nanoserver base image"
+                Export-ContainerLayer -SourceFilePath $nanoImageLocation -DestinationFilePath "$driveLetter`:\BaseImages\nanoserver.tar" -Repository "microsoft/nanoserver" -latest
+            }
         }
         if (-not (Test-Path "$driveLetter`:\BaseImages\windowsservercore.tar")) {
-			if (-not ($wscImageLocation -eq "")) {
-				Write-Host "INFO: Converting windowsservercore base image"
-				Export-ContainerLayer -SourceFilePath $wscImageLocation -DestinationFilePath "$driveLetter`:\BaseImages\windowsservercore.tar" -Repository "microsoft/windowsservercore" -latest
-			}
+            if (-not ($wscImageLocation -eq "")) {
+                Write-Host "INFO: Converting windowsservercore base image"
+                Export-ContainerLayer -SourceFilePath $wscImageLocation -DestinationFilePath "$driveLetter`:\BaseImages\windowsservercore.tar" -Repository "microsoft/windowsservercore" -latest
+            }
         }
     }
 
@@ -365,7 +458,7 @@ Try {
         "Register-ScheduledTask -TaskName `"Bootstrap`" -Action `$action -Trigger `$trigger -User SYSTEM -RunLevel Highest`n`n" + `
         "if (Test-Path c:\packer\PreBootStrappedOnce.txt) { shutdown /t 0 /r } else { New-Item c:\packer\PreBootStrappedOnce.txt -ErrorAction SilentlyContinue; c:\windows\system32\sysprep\sysprep.exe /generalize /oobe /shutdown }`n`n"
 
- 
+
     [System.IO.File]::WriteAllText("$driveLetter`:\packer\prebootstrap.ps1", $prebootstrap, (New-Object System.Text.UTF8Encoding($False)))
 
     # Write the config set out to disk
@@ -383,7 +476,7 @@ Try {
     Write-Host "INFO: Dismounting VHD"
     Dismount-DiskImage (Join-Path $targetSubdir -ChildPath $vhdFilename)
     $mounted = $false
-    
+
 
     # Create a VM from that VHD
     $vm = Get-VM (split-path $targetSubdir -leaf) -ErrorAction SilentlyContinue
@@ -394,9 +487,9 @@ Try {
     Write-Host "INFO: Creating a VM"
     $vm = New-VM -generation 1 -Path $Target -Name (split-path $targetSubdir -leaf) -NoVHD
     Set-VMProcessor $vm -ExposeVirtualizationExtensions $true -Count 8
-	Set-VM $vm -MemoryStartupBytes 4GB
-	Set-VM $vm -CheckpointType Standard
-	Set-VM $vm -AutomaticCheckpointsEnabled $False
+    Set-VM $vm -MemoryStartupBytes 4GB
+    Set-VM $vm -CheckpointType Standard
+    Set-VM $vm -AutomaticCheckpointsEnabled $False
     Add-VMHardDiskDrive $vm -ControllerNumber 0 -ControllerLocation 0 -Path (Join-Path $targetSubdir -ChildPath $vhdFilename)
     if ($switch -ne "") {
         Connect-VMNetworkAdapter -VMName (split-path $targetSubdir -leaf) -SwitchName $switch
@@ -449,7 +542,7 @@ Try {
     if ($createVM) {
         Write-Host "INFO: Starting the development VM. It will ask for creds in a few minutes..."
         Start-VM $vm
-        # Checkpoint-VM $vm    
+        # Checkpoint-VM $vm
         vmconnect localhost (split-path $targetSubdir -leaf)
     }
 
@@ -461,11 +554,11 @@ Catch [Exception] {
     Throw $_
 }
 Finally {
-    if ($mounted) { 
+    if ($mounted) {
         Write-Host "INFO: Dismounting VHD"
         Dismount-DiskImage (Join-Path $targetSubdir -ChildPath $vhdFilename)
     }
-    if ($azureMounted) { 
+    if ($azureMounted) {
         Write-Host "INFO: Dismounting Azure VHD"
         Dismount-DiskImage $AzureTargetVHD
     }
