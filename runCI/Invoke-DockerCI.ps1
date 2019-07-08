@@ -407,25 +407,121 @@ Function Get-Sources
     }
 }
 
+# Determines the path to a layer tar given the image type.
+function Get-LayerFilePath(
+    [ValidateSet("ClientEnterprise", "NanoServer", "ServerCore-LTSC", "ServerCore-SAC", "WindowsServerCore")]
+    [string] $Type,
+
+    [ValidateNotNullOrEmpty()]
+    [ValidatePattern("\d+\.\d+\.\w+\.\w+\.\d{6}-\d{4}(-\d+)?")]
+    [string] $BuildName = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").BuildLabEx,
+
+    [string] $Language = "en-us")
+{
+    $ErrorActionPreference = "Stop"
+
+    # Parse $BuildName.
+    $buildNameTokens = $BuildName.Split(".")
+
+    $buildVersion = $buildNameTokens[0]
+    $buildQfe = $buildNameTokens[1]
+    $buildFlavor = $buildNameTokens[2]
+    $buildBranch = $buildNameTokens[3]
+    $buildTimestamp = $buildNameTokens[4]
+
+    $threePartBuildName = "$buildVersion.$buildQfe.$buildTimestamp"
+
+    $mediaName = $Type
+
+    # Handle older Server Core media names.
+    if ($buildVersion -le 18362)
+    {
+        if ($buildVersion -eq 14393 -or $buildVersion -eq 17763) # RS1 and RS5 were LTSC releases.
+        {
+            if ($mediaName -eq "ServerCore-LTSC")
+            {
+                $mediaName = "WindowsServerCore"
+            }
+        }
+        else
+        {
+            if ($mediaName -eq "ServerCore-SAC")
+            {
+                $mediaName = "WindowsServerCore"
+            }
+        }
+    }
+    else
+    {
+        if ($mediaName -eq "WindowsServerCore")
+        {
+            $mediaName = "ServerCore-SAC"
+        }
+    }
+
+    # Handle cases where repository nomenclature doesn't match build artifact nomenclature.
+    switch ($mediaName)
+    {
+        "ServerCore-LTSC"
+        {
+            $mediaName = "ServerDatacenterCore_ltsc"
+            $volume = "_vl"
+        }
+        "ServerCore-SAC"
+        {
+            $mediaName = "ServerDatacenterACore_sac"
+            $volume = "_vl"
+        }
+        "WindowsServerCore"
+        {
+            $mediaName = "ServerDatacenterCore"
+            $volume = ""
+        }
+        default
+        {
+            $volume = ""
+        }
+    }
+
+    # Construct the layer file path.
+    $layerFilePath = "\\winbuilds\release\$($buildBranch)\$($threePartBuildName)\amd64fre\ContainerBaseOsPkgs\" +
+        "CBaseOsPkg_$($mediaName)_en-us$($volume)\" +
+        "CBaseOs_$($buildBranch)_$($threePartBuildName)_amd64fre_$($mediaName)_$($Language)$($volume).tar.gz"
+
+    if ($buildVersion -gt 18362 -and @("ServerDatacenterCore_ltsc", "ServerDatacenterACore_sac") -contains $mediaName)
+    {
+        $oldLayerFilePath = "\\winbuilds\release\$($buildBranch)\$($threePartBuildName)\amd64fre\ContainerBaseOsPkgs\" +
+        "CBaseOsPkg_ServerDatacenterCore_en-us\" +
+        "CBaseOs_$($buildBranch)_$($threePartBuildName)_amd64fre_ServerDatacenterCore_$($Language).tar.gz"
+
+        if (Test-Path $oldLayerFilePath)
+        {
+            return $oldLayerFilePath
+        }
+    }
+
+    return $layerFilePath
+}
+
 # Get-ImageTar generates the tar from the build share if not already present under \baseimages, and 
 # subsequently loads it into the control daemon. Note if the location can't be reached, such as is
 # the case for public users off Microsoft corpnet, no error is generated. Instead, we assume that
 # the image can be docker pulled, which is generally true for public users. Not so for arbitrary
 # nightly Windows builds of any branch though. These must come off the build share.
 Function Get-ImageTar {
-    Param([string]$Type,
-          [string]$BuildName)
+    Param([string]$Type)
           
     $ErrorActionPreference = 'Stop'
     try {
-        if (Test-Path c:\baseimages\$type.tar) {
+        if (Test-Path c:\baseimages\$Type.tar) {
             Write-Host -ForegroundColor green "INFO: c:\baseimages\$type.tar already exists - no need to grab the .tar file"
             return
         }
 
-        $Location="\\winbuilds\release\$Branch\$Build\amd64fre\ContainerBaseOsPkgs"
-        if ($(Test-Path $Location) -eq $False) {
-            Write-Host -foregroundcolor green $("INFO: Skipping image conversion to c:\BaseImages\"+$type+".tar")
+        $SourceTar = Get-LayerFilePath $Type
+
+        if ($(Test-Path $SourceTar) -eq $False) {
+            Write-Host -foregroundcolor green $("INFO: Skipping image conversion to c:\BaseImages\"+$Type+".tar")
             return
         }
 
@@ -438,15 +534,14 @@ Function Get-ImageTar {
         Register-PackageSource -Name HyperVDev -Provider PowerShellGet -Location \\sesdfs.corp.microsoft.com\1Windows\TestContent\CORE\Base\HYP\HAT\packages -Trusted -Force | Out-Null
         Install-Module -Name Containers.Layers -Repository HyperVDev | Out-Null
         Import-Module Containers.Layers | Out-Null
-            
-        $SourceTar=$Location+"\cbaseospkg_"+$BuildName+"_en-us\CBaseOS_"+$Branch+"_"+$Build+"_amd64fre_"+$BuildName+"_en-us.tar.gz"
+
         Write-Host -foregroundcolor green "INFO: Converting $SourceTar. This may take a few minutes..."
 
         if (-not(Test-Path "C:\BaseImages")) { mkdir "C:\BaseImages" }
-        Export-ContainerLayer -SourceFilePath $SourceTar -DestinationFilePath c:\BaseImages\$type.tar -Repository $("microsoft/"+$Type) -latest
+        Export-ContainerLayer -SourceFilePath $SourceTar -DestinationFilePath c:\BaseImages\$Type.tar -Repository $("microsoft/"+$Type) -latest
 
-        Write-Host -foregroundcolor green "INFO: Loading $type.tar into the control daemon. This may take a few minutes..."
-        docker load -i c:\BaseImages\$type.tar
+        Write-Host -foregroundcolor green "INFO: Loading $Type.tar into the control daemon. This may take a few minutes..."
+        docker load -i c:\BaseImages\$Type.tar
     } catch {
         Throw $_
     }
@@ -572,7 +667,7 @@ Try {
     $ControlRoot="$($TestrunDrive):\control"
 
     # Get the build 
-    $bl=(Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion"  -Name BuildLabEx).BuildLabEx
+    $bl=(Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name BuildLabEx).BuildLabEx
     $a=$bl.ToString().Split(".")
     $Branch=$a[3]
     $Build=$a[0]+"."+$a[1]+"."+$a[4]
@@ -797,13 +892,13 @@ Try {
     if ($(docker images | select -skip 1 | select-string "windowsservercore" | Measure-Object -line).Lines -lt 1) {
         $installWSC=$true
         Write-Host -ForegroundColor green "INFO: windowsservercore is not installed as an image in the control daemon"
-        Get-ImageTar "windowsservercore" "serverdatacentercore"
+        Get-ImageTar "windowsservercore"
     }
     
     # Attempt to cache the tar image for nanoserver if not on disk
     if ($(docker images | select -skip 1 | select-string "nanoserver" | Measure-Object -line).Lines -lt 1) {
         Write-Host -ForegroundColor green "INFO: nanoserver is not installed as an image in the control daemon"
-        Get-ImageTar "nanoserver" "nanoserver"
+        Get-ImageTar "nanoserver"
     }
 
     # Invoke the CI script itself.
