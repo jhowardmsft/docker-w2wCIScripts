@@ -11,7 +11,7 @@ $GIT_LOCATION="https://github.com/git-for-windows/git/releases/download/v2.18.0.
 #$JDK_LOCATION="http://download.oracle.com/otn-pub/java/jdk/8u144-b01/090f390dda5b47b9b721c7dfaa008135/jdk-8u144-windows-x64.exe" #8/14/2017
 #$JDK_LOCATION="http://download.oracle.com/otn-pub/java/jdk/9.0.1+11/jdk-9.0.1_windows-x64_bin.exe"
 $JDK_LOCATION="https://winrs1.blob.core.windows.net/jdk/jdk-8u151-windows-x64.exe"
-$NPP_LOCATION="https://notepad-plus-plus.org/repository/7.x/7.5.8/npp.7.5.8.Installer.x64.exe" # 8/24/2018
+$NPP_LOCATION="https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v7.8.7/npp.7.8.7.Installer.x64.exe" # 6/16/20
 $DOCKER_LOCATION="https://master.dockerproject.org/windows/x86_64"
 $DELVE_LOCATION="github.com/derekparker/delve/cmd/dlv"
 
